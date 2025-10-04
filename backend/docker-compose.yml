@@ -1,0 +1,87 @@
+# BlickTrack Database Services
+# 
+# This Docker Compose file sets up the complete database infrastructure
+# for the BlickTrack Enterprise platform, including PostgreSQL, Redis,
+# and pgAdmin for development and testing.
+#
+# Services:
+# - blicktrack-database: PostgreSQL 16 with BlickTrack schema
+# - blicktrack-redis: Redis 7 for caching and sessions
+# - blicktrack-pgadmin: pgAdmin 4 for database management
+#
+# Usage: docker-compose up -d
+# Access: http://localhost:8080 (pgAdmin), localhost:5432 (PostgreSQL)
+
+version: '3.8'
+
+services:
+  # PostgreSQL Database for BlickTrack
+  blicktrack-database:
+    image: postgres:16-alpine
+    container_name: blicktrack-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: blicktrack_dev
+      POSTGRES_USER: blicktrack_admin
+      POSTGRES_PASSWORD: BlickTrack@2024!
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
+    ports:
+      - "5432:5432"
+    volumes:
+      - blicktrack_postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/init:/docker-entrypoint-initdb.d
+    networks:
+      - blicktrack-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U blicktrack_admin -d blicktrack_dev"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis for Caching and Sessions (optional)
+  blicktrack-redis:
+    image: redis:7-alpine
+    container_name: blicktrack-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - blicktrack_redis_data:/data
+    networks:
+      - blicktrack-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # pgAdmin for Database Management (optional)
+  blicktrack-pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: blicktrack-pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@blicktrack.com
+      PGADMIN_DEFAULT_PASSWORD: BlickTrack@Admin2024!
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    ports:
+      - "8080:80"
+    volumes:
+      - blicktrack_pgadmin_data:/var/lib/pgadmin
+    networks:
+      - blicktrack-network
+    depends_on:
+      - blicktrack-database
+
+volumes:
+  blicktrack_postgres_data:
+    driver: local
+  blicktrack_redis_data:
+    driver: local
+  blicktrack_pgadmin_data:
+    driver: local
+
+networks:
+  blicktrack-network:
+    driver: bridge
+    name: blicktrack-network
