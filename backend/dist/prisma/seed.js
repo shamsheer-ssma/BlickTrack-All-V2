@@ -245,6 +245,7 @@ async function main() {
                 isActive: true,
                 isEmailVerified: true,
                 userType: 'REGULAR',
+                role: 'END_USER',
                 tenantId: blickTrack.id,
                 timezone: 'America/New_York',
                 locale: 'en-US'
@@ -261,6 +262,7 @@ async function main() {
                 isActive: true,
                 isEmailVerified: true,
                 userType: 'REGULAR',
+                role: 'END_USER',
                 tenantId: blickTrack.id,
                 timezone: 'America/New_York',
                 locale: 'en-US'
@@ -277,6 +279,7 @@ async function main() {
                 isActive: true,
                 isEmailVerified: true,
                 userType: 'REGULAR',
+                role: 'END_USER',
                 tenantId: blickTrack.id,
                 timezone: 'America/New_York',
                 locale: 'en-US'
@@ -293,6 +296,7 @@ async function main() {
                 isActive: true,
                 isEmailVerified: true,
                 userType: 'ADMIN',
+                role: 'SUPER_ADMIN',
                 tenantId: blickTrack.id,
                 timezone: 'America/New_York',
                 locale: 'en-US'
@@ -311,6 +315,7 @@ async function main() {
                 isActive: true,
                 isEmailVerified: true,
                 userType: 'REGULAR',
+                role: 'END_USER',
                 tenantId: huawei.id,
                 timezone: 'Asia/Shanghai',
                 locale: 'zh-CN'
@@ -327,6 +332,7 @@ async function main() {
                 isActive: true,
                 isEmailVerified: true,
                 userType: 'REGULAR',
+                role: 'END_USER',
                 tenantId: huawei.id,
                 timezone: 'Asia/Shanghai',
                 locale: 'zh-CN'
@@ -343,6 +349,7 @@ async function main() {
                 isActive: true,
                 isEmailVerified: true,
                 userType: 'REGULAR',
+                role: 'END_USER',
                 tenantId: huawei.id,
                 timezone: 'Asia/Shanghai',
                 locale: 'zh-CN'
@@ -359,6 +366,7 @@ async function main() {
                 isActive: true,
                 isEmailVerified: true,
                 userType: 'ADMIN',
+                role: 'TENANT_ADMIN',
                 tenantId: huawei.id,
                 timezone: 'Asia/Shanghai',
                 locale: 'zh-CN'
@@ -377,6 +385,7 @@ async function main() {
                 isActive: true,
                 isEmailVerified: true,
                 userType: 'REGULAR',
+                role: 'END_USER',
                 tenantId: boeing.id,
                 timezone: 'America/Chicago',
                 locale: 'en-US'
@@ -393,6 +402,7 @@ async function main() {
                 isActive: true,
                 isEmailVerified: true,
                 userType: 'REGULAR',
+                role: 'END_USER',
                 tenantId: boeing.id,
                 timezone: 'America/Chicago',
                 locale: 'en-US'
@@ -409,6 +419,7 @@ async function main() {
                 isActive: true,
                 isEmailVerified: true,
                 userType: 'REGULAR',
+                role: 'END_USER',
                 tenantId: boeing.id,
                 timezone: 'America/Chicago',
                 locale: 'en-US'
@@ -425,6 +436,7 @@ async function main() {
                 isActive: true,
                 isEmailVerified: true,
                 userType: 'ADMIN',
+                role: 'TENANT_ADMIN',
                 tenantId: boeing.id,
                 timezone: 'America/Chicago',
                 locale: 'en-US'
@@ -443,6 +455,7 @@ async function main() {
                 isActive: true,
                 isEmailVerified: true,
                 userType: 'REGULAR',
+                role: 'END_USER',
                 tenantId: utc.id,
                 timezone: 'America/New_York',
                 locale: 'en-US'
@@ -459,6 +472,7 @@ async function main() {
                 isActive: true,
                 isEmailVerified: true,
                 userType: 'REGULAR',
+                role: 'END_USER',
                 tenantId: utc.id,
                 timezone: 'America/New_York',
                 locale: 'en-US'
@@ -475,6 +489,7 @@ async function main() {
                 isActive: true,
                 isEmailVerified: true,
                 userType: 'REGULAR',
+                role: 'END_USER',
                 tenantId: utc.id,
                 timezone: 'America/New_York',
                 locale: 'en-US'
@@ -491,6 +506,7 @@ async function main() {
                 isActive: true,
                 isEmailVerified: true,
                 userType: 'ADMIN',
+                role: 'TENANT_ADMIN',
                 tenantId: utc.id,
                 timezone: 'America/New_York',
                 locale: 'en-US'

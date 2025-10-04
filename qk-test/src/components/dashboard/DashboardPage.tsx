@@ -10,11 +10,17 @@ import {
   RefreshCw,
   Server,
   Users,
-  BarChart3
+  BarChart3,
+  Shield,
+  Settings,
+  Building
 } from 'lucide-react';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { apiService } from '@/lib/api';
+import { usePermissions } from '@/hooks/usePermissions';
+import FeatureCard from '@/components/ui/FeatureCard';
+import { BLICKTRACK_THEME } from '@/lib/theme';
 
 interface StatCardProps {
   title: string;
@@ -126,8 +132,20 @@ export default function DashboardPage() {
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  // const [searchTerm, setSearchTerm] = useState('');
-  // const [filterStatus, setFilterStatus] = useState<string>('all');
+  
+  // Multi-tenant feature control
+  const {
+    user: permissionUser,
+    availableFeatures,
+    canAccessFeature,
+    canEditFeature,
+    canDeleteFeature,
+    isPlatformAdmin,
+    isTenantAdmin,
+    isUser: isRegularUser,
+    isLoading: permissionsLoading,
+    error: permissionsError
+  } = usePermissions();
 
   useEffect(() => {
     // Check authentication using API service
@@ -706,6 +724,123 @@ export default function DashboardPage() {
               ))}
             </div>
           </div>
+
+          {/* Multi-Tenant Feature Cards */}
+          {availableFeatures && availableFeatures.length > 0 && (
+            <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-lg font-semibold text-gray-900">Available Features</h3>
+                <div className="flex items-center space-x-2">
+                  <Shield className="w-5 h-5 text-blue-600" />
+                  <span className="text-sm text-gray-600">
+                    {availableFeatures.length} feature{availableFeatures.length !== 1 ? 's' : ''} available
+                  </span>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {availableFeatures.map((feature, index) => (
+                  <motion.div
+                    key={feature.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.1 * index }}
+                  >
+                    <FeatureCard
+                      feature={feature}
+                      canEdit={canEditFeature(feature.slug)}
+                      canDelete={canDeleteFeature(feature.slug)}
+                      onEdit={(feature) => {
+                        console.log('Edit feature:', feature);
+                        // Handle feature edit
+                      }}
+                      onDelete={(feature) => {
+                        console.log('Delete feature:', feature);
+                        // Handle feature delete
+                      }}
+                      onClick={(feature) => {
+                        console.log('Navigate to feature:', feature);
+                        // Navigate to feature page
+                        window.location.href = `/${feature.slug}`;
+                      }}
+                    />
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Role-based Admin Section */}
+          {(isPlatformAdmin() || isTenantAdmin()) && (
+            <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-lg font-semibold text-gray-900">Administration</h3>
+                <div className="flex items-center space-x-2">
+                  {isPlatformAdmin() ? (
+                    <Building className="w-5 h-5 text-purple-600" />
+                  ) : (
+                    <Settings className="w-5 h-5 text-blue-600" />
+                  )}
+                  <span className="text-sm text-gray-600">
+                    {isPlatformAdmin() ? 'Platform Admin' : 'Tenant Admin'}
+                  </span>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {isPlatformAdmin() && (
+                  <>
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="p-4 border border-gray-200 rounded-lg hover:border-purple-300 transition-colors cursor-pointer"
+                      onClick={() => window.location.href = '/platform-admin'}
+                    >
+                      <div className="flex items-center space-x-3">
+                        <Building className="w-6 h-6 text-purple-600" />
+                        <div>
+                          <h4 className="font-medium text-gray-900">Manage Tenants</h4>
+                          <p className="text-sm text-gray-600">View and manage all tenants</p>
+                        </div>
+                      </div>
+                    </motion.div>
+                    
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="p-4 border border-gray-200 rounded-lg hover:border-purple-300 transition-colors cursor-pointer"
+                      onClick={() => window.location.href = '/system-health'}
+                    >
+                      <div className="flex items-center space-x-3">
+                        <Server className="w-6 h-6 text-purple-600" />
+                        <div>
+                          <h4 className="font-medium text-gray-900">System Health</h4>
+                          <p className="text-sm text-gray-600">Monitor system performance</p>
+                        </div>
+                      </div>
+                    </motion.div>
+                  </>
+                )}
+                
+                {(isPlatformAdmin() || isTenantAdmin()) && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="p-4 border border-gray-200 rounded-lg hover:border-blue-300 transition-colors cursor-pointer"
+                    onClick={() => window.location.href = '/tenant-admin'}
+                  >
+                    <div className="flex items-center space-x-3">
+                      <Users className="w-6 h-6 text-blue-600" />
+                      <div>
+                        <h4 className="font-medium text-gray-900">Manage Users</h4>
+                        <p className="text-sm text-gray-600">View and manage tenant users</p>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </div>
+            </div>
+          )}
         </motion.div>
       </div>
     </div>

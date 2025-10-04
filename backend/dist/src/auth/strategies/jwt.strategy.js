@@ -28,6 +28,12 @@ let JwtStrategy = class JwtStrategy extends (0, passport_1.PassportStrategy)(pas
         this.prisma = prisma;
     }
     async validate(payload) {
+        console.log('🔍 [JWT DEBUG] JWT Strategy validate called', {
+            payloadSub: payload.sub,
+            payloadEmail: payload.email,
+            payloadRole: payload.role,
+            payloadTenantId: payload.tenantId
+        });
         const user = await this.prisma.user.findUnique({
             where: {
                 id: payload.sub,
@@ -37,13 +43,23 @@ let JwtStrategy = class JwtStrategy extends (0, passport_1.PassportStrategy)(pas
                 tenant: true,
             },
         });
+        console.log('🔍 [JWT DEBUG] User lookup result', {
+            userFound: !!user,
+            userId: user?.id,
+            userEmail: user?.email,
+            userRole: user?.role,
+            userType: user?.userType,
+            isActive: user?.isActive
+        });
         if (!user) {
+            console.log('🔍 [JWT DEBUG] User not found or inactive, throwing UnauthorizedException');
             throw new common_1.UnauthorizedException('User not found or inactive');
         }
         if (user.lockedUntil && user.lockedUntil > new Date()) {
+            console.log('🔍 [JWT DEBUG] User account is locked, throwing UnauthorizedException');
             throw new common_1.UnauthorizedException('Account is temporarily locked');
         }
-        return {
+        const userContext = {
             id: user.id,
             email: user.email,
             name: user.name,
@@ -53,6 +69,13 @@ let JwtStrategy = class JwtStrategy extends (0, passport_1.PassportStrategy)(pas
             isVerified: user.isVerified,
             mfaEnabled: user.mfaEnabled,
         };
+        console.log('🔍 [JWT DEBUG] Returning user context', {
+            id: userContext.id,
+            email: userContext.email,
+            role: userContext.role,
+            tenantId: userContext.tenantId
+        });
+        return userContext;
     }
 };
 exports.JwtStrategy = JwtStrategy;

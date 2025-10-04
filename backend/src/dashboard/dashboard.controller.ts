@@ -37,51 +37,108 @@
  *   - Optimized for frontend consumption
  */
 
-import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Query, UseGuards, Request } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { DashboardService } from './dashboard.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../rbac/guards/roles.guard';
+import { Roles } from '../rbac/decorators/roles.decorator';
+import { UserRole } from '@prisma/client';
 
 @ApiTags('Dashboard')
 @Controller('dashboard')
+@UseGuards(JwtAuthGuard, RolesGuard)
+@ApiBearerAuth()
 export class DashboardController {
   constructor(private readonly dashboardService: DashboardService) {}
 
   @Get('stats')
-  // @UseGuards(JwtAuthGuard) // Temporarily disabled for demo
-  // @ApiBearerAuth()
-  @ApiOperation({ summary: 'Get dashboard statistics' })
+  @Roles(UserRole.SUPER_ADMIN, UserRole.PLATFORM_ADMIN, UserRole.TENANT_ADMIN, UserRole.END_USER)
+  @ApiOperation({ summary: 'Get role-based dashboard statistics' })
   @ApiResponse({ status: 200, description: 'Dashboard statistics retrieved successfully' })
-  async getStats() {
-    return this.dashboardService.getDashboardStats();
+  async getStats(@Request() req) {
+    const user = req.user;
+    return this.dashboardService.getRoleBasedStats(user);
   }
 
   @Get('activity')
-  // @UseGuards(JwtAuthGuard) // Temporarily disabled for demo
-  // @ApiBearerAuth()
-  @ApiOperation({ summary: 'Get recent activity feed' })
+  @Roles(UserRole.SUPER_ADMIN, UserRole.PLATFORM_ADMIN, UserRole.TENANT_ADMIN, UserRole.END_USER)
+  @ApiOperation({ summary: 'Get role-based recent activity feed' })
   @ApiResponse({ status: 200, description: 'Recent activity retrieved successfully' })
-  async getActivity(@Query('limit') limit?: string) {
+  async getActivity(@Request() req, @Query('limit') limit?: string) {
+    const user = req.user;
     const limitNum = limit ? parseInt(limit, 10) : 10;
-    return this.dashboardService.getRecentActivity(limitNum);
+    return this.dashboardService.getRoleBasedActivity(user, limitNum);
   }
 
   @Get('projects')
-  // @UseGuards(JwtAuthGuard) // Temporarily disabled for demo
-  // @ApiBearerAuth()
-  @ApiOperation({ summary: 'Get top projects data' })
-  @ApiResponse({ status: 200, description: 'Top projects retrieved successfully' })
-  async getProjects(@Query('limit') limit?: string) {
+  @Roles(UserRole.SUPER_ADMIN, UserRole.PLATFORM_ADMIN, UserRole.TENANT_ADMIN, UserRole.END_USER)
+  @ApiOperation({ summary: 'Get role-based projects data' })
+  @ApiResponse({ status: 200, description: 'Projects retrieved successfully' })
+  async getProjects(@Request() req, @Query('limit') limit?: string) {
+    const user = req.user;
     const limitNum = limit ? parseInt(limit, 10) : 5;
-    return this.dashboardService.getTopProjects(limitNum);
+    return this.dashboardService.getRoleBasedProjects(user, limitNum);
   }
 
   @Get('health')
-  // @UseGuards(JwtAuthGuard) // Temporarily disabled for demo
-  // @ApiBearerAuth()
-  @ApiOperation({ summary: 'Get system health information' })
+  @Roles(UserRole.SUPER_ADMIN, UserRole.PLATFORM_ADMIN, UserRole.TENANT_ADMIN, UserRole.END_USER)
+  @ApiOperation({ summary: 'Get role-based system health information' })
   @ApiResponse({ status: 200, description: 'System health retrieved successfully' })
-  async getSystemHealth() {
-    return this.dashboardService.getSystemHealth();
+  async getSystemHealth(@Request() req) {
+    const user = req.user;
+    return this.dashboardService.getRoleBasedSystemHealth(user);
+  }
+
+  @Get('navigation')
+  @Roles(UserRole.SUPER_ADMIN, UserRole.PLATFORM_ADMIN, UserRole.TENANT_ADMIN, UserRole.END_USER)
+  @ApiOperation({ summary: 'Get role-based navigation menu' })
+  @ApiResponse({ status: 200, description: 'Navigation menu retrieved successfully' })
+  async getNavigation(@Request() req) {
+    const user = req.user;
+    console.log('🔍 [DASHBOARD DEBUG] Navigation endpoint called', {
+      userId: user?.id,
+      userEmail: user?.email,
+      userRole: user?.role,
+      userTenantId: user?.tenantId
+    });
+    return this.dashboardService.getRoleBasedNavigation(user);
+  }
+
+  @Get('permissions')
+  @Roles(UserRole.SUPER_ADMIN, UserRole.PLATFORM_ADMIN, UserRole.TENANT_ADMIN, UserRole.END_USER)
+  @ApiOperation({ summary: 'Get user permissions and capabilities' })
+  @ApiResponse({ status: 200, description: 'User permissions retrieved successfully' })
+  async getPermissions(@Request() req) {
+    const user = req.user;
+    return this.dashboardService.getUserPermissions(user.id);
+  }
+
+  @Get('features')
+  @Roles(UserRole.SUPER_ADMIN, UserRole.PLATFORM_ADMIN, UserRole.TENANT_ADMIN, UserRole.END_USER)
+  @ApiOperation({ summary: 'Get available features for user based on role and tenant' })
+  @ApiResponse({ status: 200, description: 'Available features retrieved successfully' })
+  async getAvailableFeatures(@Request() req) {
+    const user = req.user;
+    return this.dashboardService.getAvailableFeatures(user);
+  }
+
+  @Get('features/:featureSlug/access')
+  @Roles(UserRole.SUPER_ADMIN, UserRole.PLATFORM_ADMIN, UserRole.TENANT_ADMIN, UserRole.END_USER)
+  @ApiOperation({ summary: 'Check if user can access a specific feature' })
+  @ApiResponse({ status: 200, description: 'Feature access status retrieved successfully' })
+  async checkFeatureAccess(@Request() req, @Query('featureSlug') featureSlug: string) {
+    const user = req.user;
+    const canAccess = await this.dashboardService.canAccessFeature(user, featureSlug);
+    return { featureSlug, canAccess };
+  }
+
+  @Get('tenant-features')
+  @Roles(UserRole.SUPER_ADMIN, UserRole.PLATFORM_ADMIN, UserRole.TENANT_ADMIN, UserRole.END_USER)
+  @ApiOperation({ summary: 'Get tenant features (what features this tenant has access to)' })
+  @ApiResponse({ status: 200, description: 'Tenant features retrieved successfully' })
+  async getTenantFeatures(@Request() req) {
+    const user = req.user;
+    return this.dashboardService.getTenantFeatures(user.tenantId);
   }
 }

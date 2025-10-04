@@ -245,6 +245,91 @@ class ApiService {
       return null;
     }
   }
+
+  // ==================== ROLE-BASED DASHBOARD METHODS ====================
+
+  /**
+   * Get role-based dashboard statistics
+   */
+  async getRoleBasedStats(): Promise<any> {
+    return this.request('/dashboard/stats', {
+      method: 'GET',
+    });
+  }
+
+  /**
+   * Get role-based activity feed
+   */
+  async getRoleBasedActivity(limit: number = 10): Promise<any[]> {
+    return this.request(`/dashboard/activity?limit=${limit}`, {
+      method: 'GET',
+    });
+  }
+
+  /**
+   * Get role-based projects
+   */
+  async getRoleBasedProjects(limit: number = 5): Promise<any[]> {
+    return this.request(`/dashboard/projects?limit=${limit}`, {
+      method: 'GET',
+    });
+  }
+
+  /**
+   * Get role-based system health
+   */
+  async getRoleBasedSystemHealth(): Promise<any> {
+    return this.request('/dashboard/health', {
+      method: 'GET',
+    });
+  }
+
+  /**
+   * Get role-based navigation menu
+   */
+  async getRoleBasedNavigation(): Promise<any[]> {
+    return this.request('/dashboard/navigation', {
+      method: 'GET',
+    });
+  }
+
+  /**
+   * Get user permissions
+   */
+  async getUserPermissions(): Promise<any> {
+    return this.request('/dashboard/permissions', {
+      method: 'GET',
+    });
+  }
+
+  // ==================== MULTI-TENANT FEATURE CONTROL METHODS ====================
+
+  /**
+   * Get available features for user based on role and tenant
+   */
+  async getAvailableFeatures(): Promise<any[]> {
+    return this.request('/dashboard/features', {
+      method: 'GET',
+    });
+  }
+
+  /**
+   * Check if user can access a specific feature
+   */
+  async checkFeatureAccess(featureSlug: string): Promise<{ featureSlug: string; canAccess: boolean }> {
+    return this.request(`/dashboard/features/${featureSlug}/access`, {
+      method: 'GET',
+    });
+  }
+
+  /**
+   * Get tenant features (what features this tenant has access to)
+   */
+  async getTenantFeatures(): Promise<any[]> {
+    return this.request('/dashboard/tenant-features', {
+      method: 'GET',
+    });
+  }
 }
 
 // Export singleton instance

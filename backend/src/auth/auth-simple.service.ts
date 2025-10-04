@@ -100,7 +100,9 @@ export class AuthService {
     const payload = {
       sub: user.id,
       email: user.email,
-      role: user.userType,
+      role: user.userType === 'ADMIN' ? 
+        (user.email === 'admin@blicktrack.com' ? 'SUPER_ADMIN' : 'TENANT_ADMIN') : 
+        'END_USER',
       tenantId: user.tenantId,
     };
 

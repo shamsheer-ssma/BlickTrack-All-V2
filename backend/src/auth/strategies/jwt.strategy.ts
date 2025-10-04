@@ -65,6 +65,13 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: JwtPayload) {
+    console.log('🔍 [JWT DEBUG] JWT Strategy validate called', {
+      payloadSub: payload.sub,
+      payloadEmail: payload.email,
+      payloadRole: payload.role,
+      payloadTenantId: payload.tenantId
+    });
+
     const user = await this.prisma.user.findUnique({
       where: { 
         id: payload.sub,
@@ -75,24 +82,44 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       },
     });
 
+    console.log('🔍 [JWT DEBUG] User lookup result', {
+      userFound: !!user,
+      userId: user?.id,
+      userEmail: user?.email,
+      userRole: user?.role,
+      userType: user?.userType,
+      isActive: user?.isActive
+    });
+
     if (!user) {
+      console.log('🔍 [JWT DEBUG] User not found or inactive, throwing UnauthorizedException');
       throw new UnauthorizedException('User not found or inactive');
     }
 
     // Check if user is locked
     if (user.lockedUntil && user.lockedUntil > new Date()) {
+      console.log('🔍 [JWT DEBUG] User account is locked, throwing UnauthorizedException');
       throw new UnauthorizedException('Account is temporarily locked');
     }
 
-    return {
+    const userContext = {
       id: user.id,
       email: user.email,
       name: user.name,
-      role: user.role,
+      role: user.role, // Use role from database (now correctly set)
       tenantId: user.tenantId,
       tenant: user.tenant,
       isVerified: user.isVerified,
       mfaEnabled: user.mfaEnabled,
     };
+
+    console.log('🔍 [JWT DEBUG] Returning user context', {
+      id: userContext.id,
+      email: userContext.email,
+      role: userContext.role,
+      tenantId: userContext.tenantId
+    });
+
+    return userContext;
   }
 }

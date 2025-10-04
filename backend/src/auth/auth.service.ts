@@ -469,8 +469,21 @@ export class AuthService {
 
     this.logger.debug('Failed login attempts reset', { userId: user.id });
 
+    // Map user role for JWT token
+    const mappedRole = user.userType === 'ADMIN' ? 
+      (user.email === 'admin@blicktrack.com' ? UserRole.SUPER_ADMIN : UserRole.TENANT_ADMIN) : 
+      UserRole.END_USER;
+    
+    this.logger.debug('🔍 [AUTH DEBUG] JWT role mapping', {
+      email: user.email,
+      userType: user.userType,
+      mappedRole: mappedRole,
+      isAdmin: user.userType === 'ADMIN',
+      isBlickTrackAdmin: user.email === 'admin@blicktrack.com'
+    });
+
     // Generate access and refresh tokens
-    const tokens = await this.generateTokens(user.id, user.email, user.userType, user.tenantId);
+    const tokens = await this.generateTokens(user.id, user.email, mappedRole, user.tenantId);
     this.logger.debug('Tokens generated successfully', { userId: user.id });
 
     // Store refresh token in database for validation and revocation
@@ -503,7 +516,19 @@ export class AuthService {
         id: user.id,
         email: user.email,
         name: `${user.firstName} ${user.lastName}`,
-        role: user.userType === 'ADMIN' ? UserRole.TENANT_ADMIN : UserRole.END_USER,
+        role: (() => {
+          const mappedRole = user.userType === 'ADMIN' ? 
+            (user.email === 'admin@blicktrack.com' ? UserRole.SUPER_ADMIN : UserRole.TENANT_ADMIN) : 
+            UserRole.END_USER;
+          this.logger.debug('🔍 [AUTH DEBUG] Role mapping', {
+            email: user.email,
+            userType: user.userType,
+            mappedRole: mappedRole,
+            isAdmin: user.userType === 'ADMIN',
+            isBlickTrackAdmin: user.email === 'admin@blicktrack.com'
+          });
+          return mappedRole;
+        })(),
         tenantId: user.tenantId,
         isVerified: user.isEmailVerified,
         mfaEnabled: false, // Default to false for now (will be implemented in MFA feature)
@@ -1165,6 +1190,14 @@ export class AuthService {
       tenantId,
       type: 'access',
     };
+    
+    this.logger.debug('🔍 [AUTH DEBUG] JWT access payload created', {
+      sub: accessPayload.sub,
+      email: accessPayload.email,
+      role: accessPayload.role,
+      tenantId: accessPayload.tenantId,
+      type: accessPayload.type
+    });
 
     // Payload for refresh token
     const refreshPayload: JwtPayload = {
@@ -1338,8 +1371,13 @@ export class AuthService {
         throw new UnauthorizedException('User account is not active');
       }
 
+      // Map user role for JWT token
+      const mappedRole = user.userType === 'ADMIN' ? 
+        (user.email === 'admin@blicktrack.com' ? UserRole.SUPER_ADMIN : UserRole.TENANT_ADMIN) : 
+        UserRole.END_USER;
+
       // Generate new tokens
-      const newTokens = await this.generateTokens(user.id, user.email, user.userType, user.tenantId);
+      const newTokens = await this.generateTokens(user.id, user.email, mappedRole, user.tenantId);
       
       // Store new refresh token
       await this.storeRefreshToken(user.id, newTokens.refresh_token);
