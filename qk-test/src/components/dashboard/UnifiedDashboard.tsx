@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 import { apiService } from '@/lib/api';
 import { BLICKTRACK_THEME } from '@/lib/theme';
+import Logo from '../ui/Logo';
 
 interface DashboardStats {
   // Platform Admin Stats
@@ -105,6 +106,7 @@ const iconMap = {
 export default function UnifiedDashboard() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
+  const [userProfile, setUserProfile] = useState<any>(null);
   const [userRole, setUserRole] = useState<string>('');
   const [stats, setStats] = useState<DashboardStats>({});
   const [navigation, setNavigation] = useState<NavigationItem[]>([]);
@@ -142,6 +144,7 @@ export default function UnifiedDashboard() {
         activityData,
         projectsData,
         healthData,
+        profileData,
       ] = await Promise.all([
         apiService.getRoleBasedStats(),
         apiService.getRoleBasedNavigation(),
@@ -149,6 +152,7 @@ export default function UnifiedDashboard() {
         apiService.getRoleBasedActivity(10),
         apiService.getRoleBasedProjects(5),
         apiService.getRoleBasedSystemHealth(),
+        apiService.getUserProfile(),
       ]);
 
       setStats(statsData);
@@ -157,6 +161,7 @@ export default function UnifiedDashboard() {
       setActivity(activityData);
       setProjects(projectsData);
       setSystemHealth(healthData);
+      setUserProfile(profileData);
 
     } catch (err) {
       console.error('Error loading dashboard data:', err);
@@ -326,50 +331,92 @@ export default function UnifiedDashboard() {
 
   return (
     <div className="bg-gray-50">
-      {/* Header */}
-      <div className="bg-white shadow-sm border-b border-gray-200">
-        <div className="px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-4">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-              <p className="text-sm text-gray-600">
-                Welcome back, {user?.firstName} {user?.lastName}
-                <span className={`ml-2 px-2 py-1 rounded-full text-xs font-medium ${getRoleColor(userRole)} bg-gray-100`}>
-                  {getRoleDisplayName(userRole)}
-                </span>
-              </p>
-            </div>
+      {/* Header - Full Width */}
+      <div 
+        className="text-white shadow-lg w-full"
+        style={{
+          background: 'linear-gradient(135deg, #073c82 0%, #00d6bc 100%)',
+        }}
+      >
+        <div className="w-full px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center py-3">
             <div className="flex items-center space-x-4">
-              <button
-                onClick={() => router.push('/profile')}
-                className="flex items-center space-x-2 text-gray-600 hover:text-gray-900"
-              >
-                <User className="w-5 h-5" />
-                <span className="text-sm">Profile</span>
-              </button>
-              {permissions.canViewNotifications && (
-                <button
-                  onClick={() => router.push('/notifications')}
-                  className="flex items-center space-x-2 text-gray-600 hover:text-gray-900"
-                >
-                  <Bell className="w-5 h-5" />
-                  <span className="text-sm">Notifications</span>
-                  {stats.notifications && stats.notifications > 0 && (
-                    <span className="bg-red-500 text-white text-xs rounded-full px-2 py-1">
-                      {stats.notifications}
-                    </span>
-                  )}
-                </button>
+              <Logo 
+                size="sm" 
+                showTagline={false} 
+                className="cursor-pointer" 
+                variant="light"
+                onClick={() => router.push('/')}
+              />
+            </div>
+
+            {/* Center - Search Box */}
+            <div className="flex-1 max-w-2xl mx-8">
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <svg className="h-4 w-4 text-white/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                </div>
+                <input
+                  type="text"
+                  placeholder="Search resources, services, and docs..."
+                  className="block w-full pl-10 pr-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-white/30 focus:border-white/30 transition-all duration-200"
+                  style={{ backdropFilter: 'blur(10px)' }}
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center space-x-4">
+              {/* User Profile Info - Compact */}
+              {userProfile && (
+                <div className="flex items-center space-x-3 bg-white/10 rounded-lg px-3 py-2 border border-white/20">
+                  <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
+                    <User className="w-4 h-4 text-white" />
+                  </div>
+                  <div className="text-left">
+                    <div className="text-white font-semibold text-xs">
+                      {userProfile.firstName} {userProfile.lastName}
+                    </div>
+                    <div className="text-white/70 text-xs">
+                      {userProfile.tenantName}
+                    </div>
+                  </div>
+                </div>
               )}
+              
+              {/* Action Buttons - Compact */}
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={() => router.push('/profile')}
+                  className="flex items-center space-x-1 text-white/90 hover:text-white hover:bg-white/10 px-2 py-1 rounded transition-all duration-200"
+                >
+                  <User className="w-4 h-4" />
+                  <span className="text-xs font-medium">Profile</span>
+                </button>
+                {permissions.canViewNotifications && (
+                  <button
+                    onClick={() => router.push('/notifications')}
+                    className="flex items-center space-x-1 text-white/90 hover:text-white hover:bg-white/10 px-2 py-1 rounded transition-all duration-200"
+                  >
+                    <Bell className="w-4 h-4" />
+                    {stats.notifications && stats.notifications > 0 && (
+                      <span className="bg-red-500 text-white text-xs rounded-full px-1.5 py-0.5 font-bold ml-1">
+                        {stats.notifications}
+                      </span>
+                    )}
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="px-4 sm:px-6 lg:px-8 py-8">
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+      <div className="px-4 sm:px-6 lg:px-8 py-8 ml-64">
+          {/* Stats Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
           {renderStatsCards()}
         </div>
 

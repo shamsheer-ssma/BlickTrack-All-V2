@@ -67,9 +67,6 @@ export default function Sidebar() {
   const router = useRouter();
   const pathname = usePathname();
   const [navigation, setNavigation] = useState<NavigationItem[]>([]);
-  const [user, setUser] = useState<any>(null);
-  const [userRole, setUserRole] = useState<string>('');
-  const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -84,9 +81,6 @@ export default function Sidebar() {
         return;
       }
 
-      setUser(currentUser);
-      setUserRole(currentUser.role || 'USER');
-
       const navigationData = await apiService.getRoleBasedNavigation();
       setNavigation(navigationData);
     } catch (error) {
@@ -96,27 +90,8 @@ export default function Sidebar() {
     }
   };
 
-  const getRoleDisplayName = (role: string) => {
-    switch (role) {
-      case 'PLATFORM_ADMIN': return 'Platform Admin';
-      case 'TENANT_ADMIN': return 'Tenant Admin';
-      case 'USER': return 'User';
-      default: return 'User';
-    }
-  };
-
-  const getRoleColor = (role: string) => {
-    switch (role) {
-      case 'PLATFORM_ADMIN': return 'text-red-600 bg-red-50';
-      case 'TENANT_ADMIN': return 'text-blue-600 bg-blue-50';
-      case 'USER': return 'text-green-600 bg-green-50';
-      default: return 'text-gray-600 bg-gray-50';
-    }
-  };
-
   const handleNavigation = (path: string) => {
     router.push(path);
-    setIsOpen(false);
   };
 
   const handleLogout = () => {
@@ -135,45 +110,9 @@ export default function Sidebar() {
 
   return (
     <>
-      {/* Mobile Menu Button */}
-      <div className="lg:hidden fixed top-4 left-4 z-50">
-        <button
-          onClick={() => setIsOpen(!isOpen)}
-          className="p-2 rounded-md bg-white shadow-md hover:bg-gray-50"
-        >
-          {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-        </button>
-      </div>
-
       {/* Sidebar */}
-      <div className={`
-        fixed inset-y-0 left-0 z-40 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out
-        ${isOpen ? 'translate-x-0' : '-translate-x-full'}
-        lg:translate-x-0 lg:static lg:inset-0
-      `}>
+      <div className="w-64 bg-white shadow-xl h-screen border-r border-gray-200">
         <div className="flex flex-col h-full">
-          {/* Logo */}
-          <div className="flex items-center justify-center h-16 px-4 border-b border-gray-200">
-            <Logo size="md" showTagline={false} />
-          </div>
-
-          {/* User Info */}
-          <div className="px-4 py-4 border-b border-gray-200">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-teal-500 rounded-full flex items-center justify-center">
-                <User className="w-6 h-6 text-white" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-900 truncate">
-                  {user?.firstName} {user?.lastName}
-                </p>
-                <p className="text-xs text-gray-500 truncate">{user?.email}</p>
-                <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${getRoleColor(userRole)}`}>
-                  {getRoleDisplayName(userRole)}
-                </span>
-              </div>
-            </div>
-          </div>
 
           {/* Navigation */}
           <nav className="flex-1 px-4 py-4 space-y-2 overflow-y-auto">
@@ -219,14 +158,6 @@ export default function Sidebar() {
           </div>
         </div>
       </div>
-
-      {/* Mobile Overlay */}
-      {isOpen && (
-        <div 
-          className="fixed inset-0 z-30 bg-black bg-opacity-50 lg:hidden"
-          onClick={() => setIsOpen(false)}
-        />
-      )}
     </>
   );
 }

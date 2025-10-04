@@ -141,4 +141,13 @@ export class DashboardController {
     const user = req.user;
     return this.dashboardService.getTenantFeatures(user.tenantId);
   }
+
+  @Get('profile')
+  @Roles(UserRole.SUPER_ADMIN, UserRole.PLATFORM_ADMIN, UserRole.TENANT_ADMIN, UserRole.END_USER)
+  @ApiOperation({ summary: 'Get user profile with tenant information' })
+  @ApiResponse({ status: 200, description: 'User profile retrieved successfully' })
+  async getUserProfile(@Request() req) {
+    const user = req.user;
+    return this.dashboardService.getUserProfile(user.id);
+  }
 }

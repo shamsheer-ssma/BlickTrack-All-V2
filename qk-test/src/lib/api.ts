@@ -330,6 +330,15 @@ class ApiService {
       method: 'GET',
     });
   }
+
+  /**
+   * Get user profile with tenant information
+   */
+  async getUserProfile(): Promise<any> {
+    return this.request('/dashboard/profile', {
+      method: 'GET',
+    });
+  }
 }
 
 // Export singleton instance

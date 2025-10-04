@@ -70,6 +70,10 @@ let DashboardController = class DashboardController {
         const user = req.user;
         return this.dashboardService.getTenantFeatures(user.tenantId);
     }
+    async getUserProfile(req) {
+        const user = req.user;
+        return this.dashboardService.getUserProfile(user.id);
+    }
 };
 exports.DashboardController = DashboardController;
 __decorate([
@@ -165,6 +169,16 @@ __decorate([
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", Promise)
 ], DashboardController.prototype, "getTenantFeatures", null);
+__decorate([
+    (0, common_1.Get)('profile'),
+    (0, roles_decorator_1.Roles)(client_1.UserRole.SUPER_ADMIN, client_1.UserRole.PLATFORM_ADMIN, client_1.UserRole.TENANT_ADMIN, client_1.UserRole.END_USER),
+    (0, swagger_1.ApiOperation)({ summary: 'Get user profile with tenant information' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'User profile retrieved successfully' }),
+    __param(0, (0, common_1.Request)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], DashboardController.prototype, "getUserProfile", null);
 exports.DashboardController = DashboardController = __decorate([
     (0, swagger_1.ApiTags)('Dashboard'),
     (0, common_1.Controller)('dashboard'),

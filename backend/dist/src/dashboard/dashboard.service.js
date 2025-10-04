@@ -541,6 +541,41 @@ let DashboardService = class DashboardService {
             cpuUsage: '28%',
         };
     }
+    async getUserProfile(userId) {
+        const user = await this.prisma.user.findUnique({
+            where: { id: userId },
+            select: {
+                id: true,
+                email: true,
+                firstName: true,
+                lastName: true,
+                displayName: true,
+                role: true,
+                tenantId: true,
+                tenant: {
+                    select: {
+                        id: true,
+                        name: true,
+                        slug: true
+                    }
+                }
+            }
+        });
+        if (!user) {
+            throw new Error('User not found');
+        }
+        return {
+            id: user.id,
+            email: user.email,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            displayName: user.displayName,
+            role: user.role,
+            tenantId: user.tenantId,
+            tenantName: user.tenant?.name || 'Unknown Tenant',
+            tenantSlug: user.tenant?.slug || 'unknown'
+        };
+    }
     async getUserStats(tenantId, userId, tenantFeatures, userPermissions) {
         const [myProjects, activeProjects, completedProjects, notifications,] = await Promise.all([
             this.prisma.project.count({

@@ -147,4 +147,15 @@ export declare class DashboardController {
         maxUsers: number | null;
         currentUsers: number;
     })[]>;
+    getUserProfile(req: any): Promise<{
+        id: string;
+        email: string;
+        firstName: string;
+        lastName: string;
+        displayName: string | null;
+        role: import("@prisma/client").$Enums.UserRole;
+        tenantId: string;
+        tenantName: string;
+        tenantSlug: string;
+    }>;
 }

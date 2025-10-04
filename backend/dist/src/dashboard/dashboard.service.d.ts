@@ -199,6 +199,17 @@ export declare class DashboardService {
     private getTenantAdminActivity;
     private getTenantAdminProjects;
     private getTenantAdminSystemHealth;
+    getUserProfile(userId: string): Promise<{
+        id: string;
+        email: string;
+        firstName: string;
+        lastName: string;
+        displayName: string | null;
+        role: import("@prisma/client").$Enums.UserRole;
+        tenantId: string;
+        tenantName: string;
+        tenantSlug: string;
+    }>;
     private getUserStats;
     private getUserActivity;
     private getUserProjects;

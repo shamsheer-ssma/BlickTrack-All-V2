@@ -733,6 +733,47 @@ export class DashboardService {
 
   // ==================== USER METHODS ====================
 
+  /**
+   * Get user profile with tenant information
+   */
+  async getUserProfile(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        displayName: true,
+        role: true,
+        tenantId: true,
+        tenant: {
+          select: {
+            id: true,
+            name: true,
+            slug: true
+          }
+        }
+      }
+    });
+
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    return {
+      id: user.id,
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      displayName: user.displayName,
+      role: user.role,
+      tenantId: user.tenantId,
+      tenantName: user.tenant?.name || 'Unknown Tenant',
+      tenantSlug: user.tenant?.slug || 'unknown'
+    };
+  }
+
   private async getUserStats(tenantId: string, userId: string, tenantFeatures?: any[], userPermissions?: any) {
     const [
       myProjects,
