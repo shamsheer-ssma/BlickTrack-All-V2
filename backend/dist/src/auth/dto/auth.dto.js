@@ -27,7 +27,7 @@ __decorate([
 __decorate([
     (0, swagger_1.ApiProperty)({ example: 'SecurePassword123!' }),
     (0, class_validator_1.IsString)(),
-    (0, class_validator_1.MinLength)(12, { message: 'Password must be at least 12 characters long' }),
+    (0, class_validator_1.MinLength)(8, { message: 'Password must be at least 8 characters long' }),
     __metadata("design:type", String)
 ], RegisterDto.prototype, "password", void 0);
 __decorate([
@@ -79,7 +79,7 @@ __decorate([
 __decorate([
     (0, swagger_1.ApiProperty)({ example: 'NewSecurePassword123!' }),
     (0, class_validator_1.IsString)(),
-    (0, class_validator_1.MinLength)(12, { message: 'Password must be at least 12 characters long' }),
+    (0, class_validator_1.MinLength)(8, { message: 'Password must be at least 8 characters long' }),
     __metadata("design:type", String)
 ], ResetPasswordDto.prototype, "newPassword", void 0);
 class ChangePasswordDto {
@@ -95,7 +95,7 @@ __decorate([
 __decorate([
     (0, swagger_1.ApiProperty)({ example: 'NewSecurePassword123!' }),
     (0, class_validator_1.IsString)(),
-    (0, class_validator_1.MinLength)(12, { message: 'Password must be at least 12 characters long' }),
+    (0, class_validator_1.MinLength)(8, { message: 'Password must be at least 8 characters long' }),
     __metadata("design:type", String)
 ], ChangePasswordDto.prototype, "newPassword", void 0);
 class VerifyEmailDto {

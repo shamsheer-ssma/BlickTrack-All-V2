@@ -47,7 +47,8 @@ import {
   UnauthorizedException, 
   ConflictException,
   BadRequestException,
-  NotFoundException 
+  NotFoundException,
+  InternalServerErrorException
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
@@ -137,33 +138,42 @@ export class AuthService {
 
     this.logger.debug('User registration attempt', { email, tenantSlug });
 
-    // Check if user already exists
+    // Check if user already exists and is verified
     const existingUser = await this.prisma.user.findUnique({
       where: { email },
     });
 
     if (existingUser) {
-      this.logger.warn('Registration failed - user already exists', { email });
-      throw new ConflictException('User with this email already exists');
+      if (existingUser.isEmailVerified) {
+        this.logger.warn('Registration failed - verified user already exists', { email });
+        throw new ConflictException('User with this email already exists');
+      } else {
+        // User exists but is not verified - allow re-registration by deleting the old record
+        this.logger.info('Deleting unverified user for re-registration', { email, userId: existingUser.id });
+        await this.prisma.user.delete({
+          where: { id: existingUser.id },
+        });
+        this.logger.info('Unverified user deleted successfully', { email });
+      }
     }
 
     // Validate password strength (basic validation)
     if (!this.isPasswordStrong(password)) {
       this.logger.warn('Registration failed - weak password', { email });
       throw new BadRequestException(
-        'Password must contain at least 12 characters, including uppercase, lowercase, numbers, and special characters'
+        'Password must contain at least 8 characters, including uppercase, lowercase, numbers, and special characters'
       );
     }
 
     // Hash password
-    const saltRounds = this.configService.get<number>('BCRYPT_ROUNDS') || 12;
+    const saltRounds = parseInt(this.configService.get<string>('BCRYPT_ROUNDS') || '12', 10);
     this.logger.debug('Hashing password', { saltRounds });
     const hashedPassword = await bcrypt.hash(password, saltRounds);
 
-    // Find tenant if provided
-    let tenantId: string | undefined = undefined;
+    // Find tenant based on email domain or provided tenantSlug
+    let tenantId: string;
     if (tenantSlug) {
-      this.logger.debug('Looking up tenant', { tenantSlug });
+      this.logger.debug('Looking up tenant by slug', { tenantSlug });
       const tenant = await this.prisma.tenant.findUnique({
         where: { slug: tenantSlug, isActive: true },
       });
@@ -174,7 +184,66 @@ export class AuthService {
       }
       
       tenantId = tenant.id;
-      this.logger.debug('Tenant found', { tenantId: tenant.id, tenantName: tenant.name });
+      this.logger.debug('Tenant found by slug', { tenantId: tenant.id, tenantName: tenant.name });
+    } else {
+      // Determine tenant based on email domain
+      const emailDomain = email.split('@')[1]?.toLowerCase();
+      this.logger.debug('Determining tenant by email domain', { email, emailDomain });
+      
+      let tenantSlugToUse: string;
+      
+      // Map email domains to tenant slugs
+      switch (emailDomain) {
+        case 'gmail.com':
+          tenantSlugToUse = 'gmail';
+          break;
+        case 'outlook.com':
+        case 'hotmail.com':
+        case 'live.com':
+          tenantSlugToUse = 'microsoft';
+          break;
+        case 'yahoo.com':
+          tenantSlugToUse = 'yahoo';
+          break;
+        case 'apple.com':
+          tenantSlugToUse = 'apple';
+          break;
+        case 'amazon.com':
+          tenantSlugToUse = 'amazon';
+          break;
+        case 'google.com':
+          tenantSlugToUse = 'google';
+          break;
+        default:
+          // Use default BlickTrack tenant for unknown domains
+          tenantSlugToUse = 'blicktrack';
+          break;
+      }
+      
+      this.logger.debug('Using tenant based on email domain', { emailDomain, tenantSlug: tenantSlugToUse });
+      
+      const tenant = await this.prisma.tenant.findFirst({
+        where: { slug: tenantSlugToUse, isActive: true },
+      });
+      
+      if (!tenant) {
+        // Fallback to BlickTrack tenant if domain-specific tenant doesn't exist
+        this.logger.warn('Domain-specific tenant not found, using BlickTrack', { tenantSlug: tenantSlugToUse });
+        const defaultTenant = await this.prisma.tenant.findFirst({
+          where: { slug: 'blicktrack', isActive: true },
+        });
+        
+        if (!defaultTenant) {
+          this.logger.error('Default BlickTrack tenant not found');
+          throw new InternalServerErrorException('System configuration error');
+        }
+        
+        tenantId = defaultTenant.id;
+        this.logger.debug('Using BlickTrack fallback tenant', { tenantId: tenantId, tenantName: defaultTenant.name });
+      } else {
+        tenantId = tenant.id;
+        this.logger.debug('Using domain-specific tenant', { tenantId: tenant.id, tenantName: tenant.name, tenantSlug: tenantSlugToUse });
+      }
     }
 
     // Create user
@@ -193,33 +262,45 @@ export class AuthService {
 
     this.logger.info('User registered successfully', { userId: user.id, email: user.email });
 
-    // Generate email verification token
-    const verificationToken = await this.generateVerificationToken(user.id, email, TokenType.EMAIL_VERIFICATION);
-
     // Get tenant information for multi-tenant email branding
     const tenant = tenantId ? await this.prisma.tenant.findUnique({
       where: { id: tenantId },
       select: { name: true },
     }) : null;
 
-    // Send verification email with multi-tenant context
-    this.logger.debug('Sending verification email', { userId: user.id, email, tenantName: tenant?.name });
+    // Send OTP email for verification
+    this.logger.debug('Sending OTP email', { userId: user.id, email, tenantName: tenant?.name });
     
-    const emailResult = await this.emailService.sendVerificationEmail(
+    // Generate 6-digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+
+    // Store OTP in database
+    await this.prisma.verificationToken.create({
+      data: {
+        token: otp,
+        type: TokenType.EMAIL_VERIFICATION,
+        userId: user.id,
+        expires: expiresAt,
+        used: false,
+      },
+    });
+
+    const emailResult = await this.emailService.sendOtpEmail(
       email,
       name || 'User',
-      verificationToken,
+      otp,
       tenant?.name,
     );
 
     if (emailResult.success) {
-      this.logger.info('Verification email sent successfully', {
+      this.logger.info('OTP email sent successfully', {
         userId: user.id,
         email,
         messageId: emailResult.messageId,
       });
     } else {
-      this.logger.error('Failed to send verification email', undefined, {
+      this.logger.error('Failed to send OTP email', undefined, {
         userId: user.id,
         email,
         error: emailResult.error,
@@ -228,7 +309,7 @@ export class AuthService {
     }
 
     return {
-      message: 'User registered successfully. Please check your email for verification.',
+      message: 'User registered successfully. Please check your email for the verification code.',
       userId: user.id,
     };
   }
@@ -432,15 +513,15 @@ export class AuthService {
 
   /**
    * Request password reset for user
-   * Sends secure reset link via email
+   * Sends OTP via email for password reset
    * 
    * @param forgotPasswordDto - Contains user's email
    * @returns Generic success message (doesn't reveal if user exists)
    * 
    * Security:
    * - Doesn't reveal if email exists in system
-   * - Generates secure random token
-   * - Token expires in 1 hour (configurable)
+   * - Generates secure 6-digit OTP
+   * - OTP expires in 5 minutes
    * - Includes IP address in email for security
    * 
    * Multi-tenant:
@@ -449,7 +530,7 @@ export class AuthService {
   async forgotPassword(forgotPasswordDto: ForgotPasswordDto): Promise<{ message: string }> {
     const { email } = forgotPasswordDto;
 
-    this.logger.debug('Password reset requested', { email });
+    this.logger.debug('Password reset OTP requested', { email });
 
     // Find user with tenant information
     const user = await this.prisma.user.findUnique({
@@ -462,33 +543,44 @@ export class AuthService {
     });
 
     if (!user) {
-      this.logger.warn('Password reset requested for non-existent email', { email });
+      this.logger.warn('Password reset OTP requested for non-existent email', { email });
       // Don't reveal if user exists or not - return success anyway
-      return { message: 'If the email exists, a password reset link has been sent.' };
+      return { message: 'If the email exists, a password reset code has been sent.' };
     }
 
-    // Generate secure reset token
-    const resetToken = await this.generateVerificationToken(user.id, email, TokenType.PASSWORD_RESET);
-    
-    this.logger.debug('Password reset token generated', { userId: user.id, email });
+    // Generate 6-digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
 
-    // Send password reset email with multi-tenant branding
-    const emailResult = await this.emailService.sendPasswordResetEmail(
+    this.logger.debug('Password reset OTP generated', { userId: user.id, otpLength: otp.length });
+
+    // Store OTP in database
+    await this.prisma.verificationToken.create({
+      data: {
+        token: otp,
+        type: TokenType.PASSWORD_RESET,
+        userId: user.id,
+        expires: expiresAt,
+        used: false,
+      },
+    });
+
+    // Send password reset OTP email with multi-tenant branding
+    const emailResult = await this.emailService.sendPasswordResetOtpEmail(
       email,
       `${user.firstName} ${user.lastName}`,
-      resetToken,
+      otp,
       user.tenant?.name,
-      undefined, // IP address - would come from request context
     );
 
     if (emailResult.success) {
-      this.logger.info('Password reset email sent successfully', {
+      this.logger.info('Password reset OTP email sent successfully', {
         userId: user.id,
         email,
         messageId: emailResult.messageId,
       });
     } else {
-      this.logger.error('Failed to send password reset email', undefined, {
+      this.logger.error('Failed to send password reset OTP email', undefined, {
         userId: user.id,
         email,
         error: emailResult.error,
@@ -496,35 +588,35 @@ export class AuthService {
       // Don't reveal email failure to prevent enumeration
     }
 
-    return { message: 'If the email exists, a password reset link has been sent.' };
+    return { message: 'If the email exists, a password reset code has been sent.' };
   }
 
   /**
-   * Reset user password using valid reset token
+   * Reset user password using valid OTP
    * 
-   * @param resetPasswordDto - Contains reset token and new password
+   * @param resetPasswordDto - Contains OTP and new password
    * @returns Success message
-   * @throws BadRequestException if token is invalid or expired
+   * @throws BadRequestException if OTP is invalid or expired
    * 
    * Process:
-   * 1. Validate token exists and not used
-   * 2. Check token expiration
+   * 1. Validate OTP exists and not used
+   * 2. Check OTP expiration
    * 3. Validate new password strength
    * 4. Hash new password
    * 5. Update user password
-   * 6. Mark token as used
+   * 6. Mark OTP as used
    * 7. Send security alert email
    * 8. Create audit log
    */
   async resetPassword(resetPasswordDto: ResetPasswordDto): Promise<{ message: string }> {
-    const { token, newPassword } = resetPasswordDto;
+    const { token: otp, newPassword } = resetPasswordDto;
 
-    this.logger.debug('Password reset attempt', { tokenProvided: !!token });
+    this.logger.debug('Password reset attempt', { otpProvided: !!otp });
 
-    // Find valid reset token
+    // Find valid reset OTP
     const resetToken = await this.prisma.verificationToken.findFirst({
       where: {
-        token,
+        token: otp,
         type: TokenType.PASSWORD_RESET,
         used: false,
       },
@@ -540,24 +632,24 @@ export class AuthService {
     });
 
     if (!resetToken) {
-      this.logger.warn('Password reset failed - invalid or used token', { token: token.substring(0, 10) });
-      throw new BadRequestException('Invalid or expired reset token');
+      this.logger.warn('Password reset failed - invalid or used OTP', { otpLength: otp?.length });
+      throw new BadRequestException('Invalid or expired reset code');
     }
 
-    // Check if token is expired
+    // Check if OTP is expired
     if (resetToken.expires < new Date()) {
-      this.logger.warn('Password reset failed - expired token', {
+      this.logger.warn('Password reset failed - expired OTP', {
         userId: resetToken.userId,
         expiredAt: resetToken.expires,
       });
-      throw new BadRequestException('Reset token has expired. Please request a new one.');
+      throw new BadRequestException('Reset code has expired. Please request a new one.');
     }
 
     // Validate new password strength
     if (!this.isPasswordStrong(newPassword)) {
       this.logger.warn('Password reset failed - weak password', { userId: resetToken.userId });
       throw new BadRequestException(
-        'Password must contain at least 12 characters, including uppercase, lowercase, numbers, and special characters'
+        'Password must contain at least 8 characters, including uppercase, lowercase, numbers, and special characters'
       );
     }
 
@@ -640,7 +732,7 @@ export class AuthService {
     // Validate new password
     if (!this.isPasswordStrong(newPassword)) {
       throw new BadRequestException(
-        'Password must contain at least 12 characters, including uppercase, lowercase, numbers, and special characters'
+        'Password must contain at least 8 characters, including uppercase, lowercase, numbers, and special characters'
       );
     }
 
@@ -755,6 +847,201 @@ export class AuthService {
       data: {
         eventType: 'AUTHENTICATION',
         action: 'EMAIL_VERIFIED',
+        userId: verificationToken.userId,
+        tenantId: verificationToken.user?.tenantId || '',
+        success: true,
+      },
+    });
+
+    return { message: 'Email verified successfully. You can now log in.' };
+  }
+
+  /**
+   * Send OTP to user's email for verification
+   * 
+   * @param email - User's email address
+   * @returns Success message
+   * @throws NotFoundException if user not found
+   * @throws BadRequestException if email already verified
+   * 
+   * Process:
+   * 1. Find user by email
+   * 2. Check if email already verified
+   * 3. Generate 6-digit OTP
+   * 4. Store OTP in database with expiration
+   * 5. Send OTP via email
+   * 6. Create audit log
+   */
+  async sendOtp(email: string): Promise<{ message: string }> {
+    this.logger.debug('OTP send request', { email });
+
+    // Find user by email
+    const user = await this.prisma.user.findUnique({
+      where: { email: email.toLowerCase() },
+      include: {
+        tenant: {
+          select: { name: true },
+        },
+      },
+    });
+
+    if (!user) {
+      this.logger.warn('OTP send failed - user not found', { email });
+      throw new NotFoundException('User not found');
+    }
+
+    // Check if email already verified
+    if (user.isEmailVerified) {
+      this.logger.warn('OTP send failed - email already verified', { userId: user.id });
+      throw new BadRequestException('Email is already verified');
+    }
+
+    // Generate 6-digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+
+    this.logger.debug('OTP generated', { userId: user.id, otpLength: otp.length });
+
+    // Store OTP in database
+    await this.prisma.verificationToken.create({
+      data: {
+        token: otp,
+        type: TokenType.EMAIL_VERIFICATION,
+        userId: user.id,
+        expires: expiresAt,
+        used: false,
+      },
+    });
+
+    // Send OTP via email
+    const emailResult = await this.emailService.sendOtpEmail(
+      user.email,
+      `${user.firstName} ${user.lastName}`,
+      otp,
+      user.tenant?.name,
+    );
+
+    if (!emailResult.success) {
+      this.logger.error('Failed to send OTP email', undefined, { 
+        userId: user.id, 
+        error: emailResult.error || 'Unknown error' 
+      });
+      throw new InternalServerErrorException('Failed to send OTP email');
+    }
+
+    // Create audit log
+    await this.prisma.auditLog.create({
+      data: {
+        eventType: 'AUTHENTICATION',
+        action: 'OTP_SENT',
+        userId: user.id,
+        tenantId: user.tenantId,
+        success: true,
+      },
+    });
+
+    this.logger.info('OTP sent successfully', { userId: user.id, email: user.email });
+
+    return { message: 'OTP sent to your email address' };
+  }
+
+  /**
+   * Verify OTP code
+   * 
+   * @param email - User's email address
+   * @param otp - 6-digit OTP code
+   * @returns Success message
+   * @throws BadRequestException if OTP is invalid or expired
+   * 
+   * Process:
+   * 1. Find valid OTP token
+   * 2. Check OTP expiration
+   * 3. Update user email verification status
+   * 4. Mark OTP as used
+   * 5. Send welcome email
+   * 6. Create audit log
+   */
+  async verifyOtp(email: string, otp: string): Promise<{ message: string }> {
+    this.logger.debug('OTP verification attempt', { email, otpLength: otp.length });
+
+    // Find valid OTP token
+    const verificationToken = await this.prisma.verificationToken.findFirst({
+      where: {
+        token: otp,
+        type: TokenType.EMAIL_VERIFICATION,
+        used: false,
+        user: {
+          email: email.toLowerCase(),
+        },
+      },
+      include: {
+        user: {
+          include: {
+            tenant: {
+              select: { name: true },
+            },
+          },
+        },
+      },
+    });
+
+    if (!verificationToken) {
+      this.logger.warn('OTP verification failed - invalid OTP', { email });
+      throw new BadRequestException('Invalid OTP code');
+    }
+
+    // Check if OTP is expired
+    if (verificationToken.expires < new Date()) {
+      this.logger.warn('OTP verification failed - expired OTP', {
+        userId: verificationToken.userId,
+        expiredAt: verificationToken.expires,
+      });
+      throw new BadRequestException('OTP has expired. Please request a new one.');
+    }
+
+    this.logger.debug('OTP validated successfully', { userId: verificationToken.userId });
+
+    // Update user email verification status
+    await this.prisma.user.update({
+      where: { id: verificationToken.userId! },
+      data: {
+        isEmailVerified: true,
+        isVerified: true,
+      },
+    });
+
+    // Mark OTP as used
+    await this.prisma.verificationToken.update({
+      where: { id: verificationToken.id },
+      data: {
+        used: true,
+        usedAt: new Date(),
+      },
+    });
+
+    this.logger.info('OTP verified successfully', {
+      userId: verificationToken.userId,
+      email: verificationToken.user?.email,
+    });
+
+    // Send welcome email
+    if (verificationToken.user) {
+      const emailResult = await this.emailService.sendWelcomeEmail(
+        verificationToken.user.email,
+        `${verificationToken.user.firstName} ${verificationToken.user.lastName}`,
+        verificationToken.user.tenant?.name,
+      );
+
+      if (emailResult.success) {
+        this.logger.debug('Welcome email sent', { userId: verificationToken.userId });
+      }
+    }
+
+    // Create audit log
+    await this.prisma.auditLog.create({
+      data: {
+        eventType: 'AUTHENTICATION',
+        action: 'OTP_VERIFIED',
         userId: verificationToken.userId,
         tenantId: verificationToken.user?.tenantId || '',
         success: true,
@@ -1235,14 +1522,14 @@ export class AuthService {
    * @returns true if password meets strength requirements, false otherwise
    * 
    * Requirements:
-   * - At least 12 characters
+   * - At least 8 characters
    * - At least 1 uppercase letter
    * - At least 1 lowercase letter
    * - At least 1 number
    * - At least 1 special character
    */
   private isPasswordStrong(password: string): boolean {
-    const strongPasswordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{12,}$/;
+    const strongPasswordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
     return strongPasswordRegex.test(password);
   }
 

@@ -1,15 +1,17 @@
 import React from 'react';
 import { Shield } from 'lucide-react';
+import { BLICKTRACK_THEME, getGradientStyle } from '@/lib/theme';
 
 interface LogoProps {
   size?: 'sm' | 'md' | 'lg' | 'xl';
   showTagline?: boolean;
   className?: string;
+  variant?: 'default' | 'light' | 'dark';
 }
 
 const BRAND = {
   name: 'BlickTrack',
-  tagline: 'Cybersecurity Lifecycle Management',
+  tagline: 'Security Unified',
 } as const;
 
 const sizeClasses = {
@@ -46,40 +48,60 @@ const sizeClasses = {
 export const Logo: React.FC<LogoProps> = ({ 
   size = 'md', 
   showTagline = true, 
-  className = '' 
+  className = '',
+  variant = 'default'
 }) => {
   const classes = sizeClasses[size];
   
   return (
-    <div className={`flex items-center ${classes.spacing} ${className}`}>
-      <div 
-        className={`${classes.container} rounded-xl flex items-center justify-center`}
+    <div className={`flex items-start ${className}`}>
+      <div
+        className={`${classes.container} rounded-xl flex items-center justify-center mr-3`}
         style={{
-          background: 'linear-gradient(to bottom right, #2563eb, #1e3a8a)'
+          background: BLICKTRACK_THEME.colors.gradients.primary,
+          boxShadow: BLICKTRACK_THEME.colors.shadows.primary,
         }}
       >
         <Shield className={`${classes.icon} text-white`} />
       </div>
-      <div>
-        <div 
-          className={`${classes.text} font-bold block`}
+      <div className="flex flex-col items-start">
+        <div
+          className={`${classes.text} font-bold`}
           style={{
-            background: 'linear-gradient(90deg, #2563eb 0%, #1e3a8a 100%)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            backgroundClip: 'text',
-            color: '#2563eb'
+            ...(variant === 'light' 
+              ? { 
+                  color: '#ffffff',
+                  fontFamily: BLICKTRACK_THEME.typography.fontFamily.primary,
+                }
+              : variant === 'dark'
+              ? {
+                  color: '#1f2937',
+                  fontFamily: BLICKTRACK_THEME.typography.fontFamily.primary,
+                }
+              : {
+                  ...getGradientStyle('primary'),
+                  fontFamily: BLICKTRACK_THEME.typography.fontFamily.primary,
+                }
+            ),
           }}
         >
-          {BRAND.name}
+          BlickTrack
         </div>
-        {showTagline && (
-          <div 
-            className={`${classes.tagline} font-medium mt-1 block text-gray-600`}
-          >
-            {BRAND.tagline}
-          </div>
-        )}
+               {showTagline && (
+                 <div 
+                   className={`${classes.tagline} font-medium`}
+                   style={{
+                     color: variant === 'light' 
+                       ? '#e5e7eb' 
+                       : variant === 'dark'
+                       ? '#6b7280'
+                       : BLICKTRACK_THEME.colors.text.muted,
+                     fontFamily: BLICKTRACK_THEME.typography.fontFamily.primary,
+                   }}
+                 >
+                   &nbsp;Security Unified
+                 </div>
+               )}
       </div>
     </div>
   );

@@ -123,19 +123,19 @@ export class AppConfigService {
 
   // Email Configuration
   get smtpHost(): string {
-    return this.configService.get<string>('SMTP_HOST') || 'smtp.gmail.com';
+    return this.configService.get<string>('EMAIL_SMTP_HOST') || 'smtp.gmail.com';
   }
 
   get smtpPort(): number {
-    return this.configService.get<number>('SMTP_PORT') || 587;
+    return this.configService.get<number>('EMAIL_SMTP_PORT') || 587;
   }
 
   get smtpUser(): string {
-    return this.configService.get<string>('SMTP_USER') || '';
+    return this.configService.get<string>('EMAIL_USER') || '';
   }
 
   get smtpPass(): string {
-    return this.configService.get<string>('SMTP_PASS') || '';
+    return this.configService.get<string>('EMAIL_PASS') || '';
   }
 
   // External APIs

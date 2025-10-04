@@ -7,7 +7,24 @@
  * - Error handling and response formatting
  */
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
+
+if (!API_BASE_URL) {
+  throw new Error('NEXT_PUBLIC_API_URL environment variable is required. Please set it in your .env.local file.');
+}
+
+// Type assertion since we've already checked it's not undefined
+const API_BASE_URL_ASSERTED = API_BASE_URL as string;
+
+export interface User {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  displayName: string;
+  role: string;
+  tenantId: string;
+}
 
 export interface LoginRequest {
   email: string;
@@ -17,15 +34,7 @@ export interface LoginRequest {
 export interface LoginResponse {
   access_token: string;
   refresh_token?: string;
-  user?: {
-    id: string;
-    email: string;
-    firstName: string;
-    lastName: string;
-    displayName: string;
-    role: string;
-    tenantId: string;
-  };
+  user?: User;
 }
 
 export interface ApiError {
@@ -38,7 +47,7 @@ class ApiService {
   private baseUrl: string;
 
   constructor() {
-    this.baseUrl = API_BASE_URL;
+    this.baseUrl = API_BASE_URL_ASSERTED;
   }
 
   /**
@@ -168,9 +177,39 @@ class ApiService {
   }
 
   /**
+   * Send OTP to email for verification
+   */
+  async sendOtp(email: string): Promise<{ message: string }> {
+    return this.request<{ message: string }>('/auth/send-otp', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    });
+  }
+
+  /**
+   * Verify OTP code
+   */
+  async verifyOtp(email: string, otp: string): Promise<{ message: string }> {
+    return this.request<{ message: string }>('/auth/verify-otp', {
+      method: 'POST',
+      body: JSON.stringify({ email, otp }),
+    });
+  }
+
+  /**
+   * Reset password with OTP
+   */
+  async resetPassword(token: string, newPassword: string): Promise<{ message: string }> {
+    return this.request<{ message: string }>('/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify({ token, newPassword }),
+    });
+  }
+
+  /**
    * Get user profile
    */
-  async getProfile(): Promise<any> {
+  async getProfile(): Promise<User> {
     return this.request('/users/profile', {
       method: 'GET',
     });
@@ -196,7 +235,7 @@ class ApiService {
   /**
    * Get current user from localStorage
    */
-  getCurrentUser(): any | null {
+  getCurrentUser(): User | null {
     if (typeof window === 'undefined') return null;
     
     try {

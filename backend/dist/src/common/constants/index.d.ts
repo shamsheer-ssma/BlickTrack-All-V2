@@ -9,7 +9,7 @@ export declare const AUTH_CONSTANTS: {
     readonly BCRYPT_ROUNDS: 12;
     readonly MAX_LOGIN_ATTEMPTS: 5;
     readonly LOCKOUT_DURATION: number;
-    readonly PASSWORD_MIN_LENGTH: 12;
+    readonly PASSWORD_MIN_LENGTH: 8;
     readonly TOKEN_EXPIRY: {
         readonly EMAIL_VERIFICATION: number;
         readonly PASSWORD_RESET: number;

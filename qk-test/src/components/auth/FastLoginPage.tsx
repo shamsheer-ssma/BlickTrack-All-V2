@@ -113,7 +113,7 @@ export default function FastLoginPage() {
                 Email Address
               </label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4" style={{ color: '#073c82' }} />
                 <input
                   type="email"
                   name="email"
@@ -136,7 +136,7 @@ export default function FastLoginPage() {
                 Password
               </label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4" style={{ color: '#073c82' }} />
                 <input
                   type={showPassword ? 'text' : 'password'}
                   name="password"
@@ -172,7 +172,20 @@ export default function FastLoginPage() {
                 />
                 <span className="ml-2 text-sm text-gray-600">Remember me</span>
               </label>
-              <a href="/forgot-password" className="text-sm text-blue-600 hover:text-blue-800">
+              <a 
+                href="/forgot-password" 
+                className="text-sm transition-colors duration-200"
+                style={{
+                  color: '#073c82',
+                  textDecoration: 'none'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.color = '#00d6bc';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.color = '#073c82';
+                }}
+              >
                 Forgot password?
               </a>
             </div>
@@ -183,8 +196,8 @@ export default function FastLoginPage() {
               disabled={isLoading}
               className="w-full py-3 px-4 rounded-xl font-medium text-white transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
               style={{
-                background: 'linear-gradient(90deg, #2563eb 0%, #1e3a8a 100%)',
-                boxShadow: '0 4px 6px -1px rgba(37, 99, 235, 0.2)'
+                background: 'linear-gradient(90deg, #073c82 0%, #00d6bc 100%)',
+                boxShadow: '0 4px 6px -1px rgba(7, 60, 130, 0.2)'
               }}
             >
               {isLoading ? 'Signing In...' : 'Sign In'}
@@ -194,16 +207,16 @@ export default function FastLoginPage() {
           {/* Footer */}
           <div className="mt-6 text-center">
             <p className="text-sm text-gray-600">
-              Don't have an account?{' '}
+              Don&apos;t have an account?{' '}
               <a 
                 href="/signup" 
                 className="text-blue-600 hover:text-blue-800 font-medium"
                 style={{
-                  background: 'linear-gradient(90deg, #2563eb 0%, #1e3a8a 100%)',
+                  background: 'linear-gradient(90deg, #073c82 0%, #00d6bc 100%)',
                   WebkitBackgroundClip: 'text',
                   WebkitTextFillColor: 'transparent',
                   backgroundClip: 'text',
-                  color: '#2563eb'
+                  color: '#073c82'
                 }}
               >
                 Sign up

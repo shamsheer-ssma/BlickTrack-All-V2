@@ -36,15 +36,15 @@ JWT_REFRESH_EXPIRES_IN=30d
 BCRYPT_ROUNDS=12
 ```
 
-### Email Configuration
+### Email Configuration (Strato SMTP)
 ```env
-SMTP_HOST=smtp.gmail.com
+SMTP_HOST=smtp.strato.de
 SMTP_PORT=587
 SMTP_SECURE=false
-SMTP_USER=your-email@example.com
-SMTP_PASSWORD=your-app-password
+SMTP_USER=noreply@blicktrack.com
+SMTP_PASSWORD=S@Berlin99
 SMTP_FROM_EMAIL=noreply@blicktrack.com
-SMTP_FROM_NAME=BlickTrack Security Platform
+SMTP_FROM_NAME=Blick Track Security
 ```
 
 ### Security Settings

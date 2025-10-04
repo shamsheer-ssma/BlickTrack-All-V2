@@ -67,7 +67,7 @@ let EmailService = class EmailService {
         }
     }
     checkEmailConfiguration() {
-        const requiredVars = ['SMTP_HOST', 'SMTP_PORT', 'SMTP_USER', 'SMTP_PASSWORD'];
+        const requiredVars = ['EMAIL_SMTP_HOST', 'EMAIL_SMTP_PORT', 'EMAIL_USER', 'EMAIL_PASS'];
         const missing = requiredVars.filter(varName => !this.configService.get(varName));
         if (missing.length > 0) {
             this.logger.warn('Missing email configuration', { missing });
@@ -77,11 +77,11 @@ let EmailService = class EmailService {
     }
     initializeTransporter() {
         try {
-            const host = this.configService.get('SMTP_HOST');
-            const port = this.configService.get('SMTP_PORT', 587);
-            const secure = this.configService.get('SMTP_SECURE', false);
-            const user = this.configService.get('SMTP_USER');
-            const pass = this.configService.get('SMTP_PASSWORD');
+            const host = this.configService.get('EMAIL_SMTP_HOST');
+            const port = this.configService.get('EMAIL_SMTP_PORT', 587);
+            const secure = this.configService.get('EMAIL_SMTP_SECURE', false);
+            const user = this.configService.get('EMAIL_USER');
+            const pass = this.configService.get('EMAIL_PASS');
             this.logger.debug('Initializing email transporter', {
                 host,
                 port,
@@ -91,7 +91,8 @@ let EmailService = class EmailService {
             this.transporter = nodemailer.createTransport({
                 host,
                 port,
-                secure,
+                secure: false,
+                requireTLS: true,
                 auth: {
                     user,
                     pass,
@@ -105,7 +106,7 @@ let EmailService = class EmailService {
                 greetingTimeout: 10000,
                 socketTimeout: 20000,
                 tls: {
-                    rejectUnauthorized: true,
+                    rejectUnauthorized: false,
                     minVersion: 'TLSv1.2',
                 },
             });
@@ -143,10 +144,9 @@ let EmailService = class EmailService {
             retryCount,
         });
         try {
-            const fromEmail = this.configService.get('SMTP_FROM_EMAIL');
-            const fromName = this.configService.get('SMTP_FROM_NAME', 'BlickTrack');
+            const fromEmail = this.configService.get('EMAIL_FROM') || 'Blick Track Security <noreply@blicktrack.com>';
             const mailOptions = {
-                from: options.from || `"${fromName}" <${fromEmail}>`,
+                from: options.from || fromEmail,
                 to: options.to,
                 subject: options.subject,
                 html: options.html,
@@ -202,7 +202,7 @@ let EmailService = class EmailService {
             tenantName: tenantName || 'BlickTrack',
             tenantLogo,
             companyName: tenantName || 'BlickTrack Security Platform',
-            supportEmail: this.configService.get('SMTP_FROM_EMAIL'),
+            supportEmail: this.configService.get('EMAIL_FROM') || 'noreply@blicktrack.com',
             loginUrl: `${frontendUrl}/login`,
         };
         const html = this.generateVerificationEmailTemplate(context);
@@ -225,13 +225,31 @@ let EmailService = class EmailService {
             expirationTime: `${expirationMinutes} minutes`,
             tenantName: tenantName || 'BlickTrack',
             companyName: tenantName || 'BlickTrack Security Platform',
-            supportEmail: this.configService.get('SMTP_FROM_EMAIL'),
+            supportEmail: this.configService.get('EMAIL_FROM') || 'noreply@blicktrack.com',
             loginUrl: `${frontendUrl}/login`,
             ipAddress,
             action: 'Password Reset Request',
         };
         const html = this.generatePasswordResetEmailTemplate(context);
         const subject = `Password Reset Request - ${context.tenantName}`;
+        return this.sendEmail({
+            to: email,
+            subject,
+            html,
+        });
+    }
+    async sendPasswordResetOtpEmail(email, userName, otp, tenantName) {
+        this.logger.debug('Sending password reset OTP email', { email, userName, tenantName });
+        const context = {
+            userName,
+            userEmail: email,
+            tenantName: tenantName || 'BlickTrack',
+            companyName: tenantName || 'BlickTrack Security Platform',
+            supportEmail: this.configService.get('EMAIL_FROM') || 'noreply@blicktrack.com',
+            otpCode: otp,
+        };
+        const html = this.generatePasswordResetOtpEmailTemplate(context);
+        const subject = `Password Reset Code - ${context.tenantName}`;
         return this.sendEmail({
             to: email,
             subject,
@@ -246,12 +264,30 @@ let EmailService = class EmailService {
             userEmail: email,
             tenantName: tenantName || 'BlickTrack',
             companyName: tenantName || 'BlickTrack Security Platform',
-            supportEmail: this.configService.get('SMTP_FROM_EMAIL'),
+            supportEmail: this.configService.get('EMAIL_FROM') || 'noreply@blicktrack.com',
             loginUrl: `${frontendUrl}/login`,
             dashboardUrl: `${frontendUrl}/dashboard`,
         };
         const html = this.generateWelcomeEmailTemplate(context);
         const subject = `Welcome to ${context.tenantName}!`;
+        return this.sendEmail({
+            to: email,
+            subject,
+            html,
+        });
+    }
+    async sendOtpEmail(email, userName, otp, tenantName) {
+        this.logger.debug('Sending OTP email', { email, userName, tenantName });
+        const context = {
+            userName,
+            userEmail: email,
+            tenantName: tenantName || 'BlickTrack',
+            companyName: tenantName || 'BlickTrack Security Platform',
+            supportEmail: this.configService.get('EMAIL_FROM') || 'noreply@blicktrack.com',
+            otpCode: otp,
+        };
+        const html = this.generateOtpEmailTemplate(context);
+        const subject = `Your verification code - ${context.tenantName}`;
         return this.sendEmail({
             to: email,
             subject,
@@ -270,7 +306,7 @@ let EmailService = class EmailService {
             location,
             tenantName: tenantName || 'BlickTrack',
             companyName: tenantName || 'BlickTrack Security Platform',
-            supportEmail: this.configService.get('SMTP_FROM_EMAIL'),
+            supportEmail: this.configService.get('EMAIL_FROM') || 'noreply@blicktrack.com',
             loginUrl: `${frontendUrl}/login`,
         };
         const html = this.generateSecurityAlertEmailTemplate(context);
@@ -402,6 +438,163 @@ let EmailService = class EmailService {
 </html>
     `.trim();
     }
+    generatePasswordResetOtpEmailTemplate(context) {
+        return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Password Reset Code</title>
+  <style>
+    body { 
+      font-family: 'Geometrica Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; 
+      line-height: 1.6; 
+      color: #333; 
+      margin: 0; 
+      padding: 0; 
+      background-color: #f4f4f4; 
+    }
+    .container { 
+      max-width: 600px; 
+      margin: 40px auto; 
+      background: #ffffff; 
+      border-radius: 8px; 
+      overflow: hidden; 
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1); 
+    }
+    .header { 
+      background: linear-gradient(135deg, #073c82 0%, #00d6bc 100%); 
+      color: #ffffff; 
+      padding: 40px 30px; 
+      text-align: center; 
+    }
+    .header h1 { 
+      margin: 0; 
+      font-size: 28px; 
+      font-weight: 600; 
+      font-family: 'Geometrica Sans', sans-serif;
+    }
+    .content { 
+      padding: 40px 30px; 
+    }
+    .content h2 { 
+      color: #333; 
+      font-size: 24px; 
+      margin-top: 0; 
+      font-family: 'Geometrica Sans', sans-serif;
+    }
+    .content p { 
+      color: #666; 
+      font-size: 16px; 
+      margin: 15px 0; 
+    }
+    .otp-code { 
+      background: #f8fafc; 
+      border: 2px dashed #073c82; 
+      border-radius: 8px; 
+      padding: 20px; 
+      margin: 30px 0; 
+      text-align: center; 
+    }
+    .otp-code .code { 
+      font-size: 32px; 
+      font-weight: bold; 
+      color: #073c82; 
+      letter-spacing: 8px; 
+      font-family: 'JetBrains Mono', 'Fira Code', 'Monaco', 'Cascadia Code', 'Segoe UI Mono', 'Roboto Mono', monospace; 
+    }
+    .otp-code .label { 
+      color: #6b7280; 
+      font-size: 14px; 
+      margin-top: 10px; 
+    }
+    .warning { 
+      background: #fff3cd; 
+      border-left: 4px solid #ffc107; 
+      padding: 15px; 
+      margin: 20px 0; 
+      border-radius: 4px; 
+    }
+    .security-info { 
+      background: #f8fafc; 
+      padding: 15px; 
+      margin: 20px 0; 
+      border-radius: 4px; 
+      font-size: 14px; 
+    }
+    .footer { 
+      background: #f8fafc; 
+      padding: 20px 30px; 
+      text-align: center; 
+      font-size: 14px; 
+      color: #6b7280; 
+    }
+    .footer a { 
+      color: #073c82; 
+      text-decoration: none; 
+    }
+     .company-name { 
+       font-size: 18px; 
+       font-weight: 600; 
+       color: #ffffff; 
+       margin-bottom: 5px; 
+       font-family: 'Geometrica Sans', sans-serif;
+     }
+     .company-tagline { 
+       font-size: 14px; 
+       font-weight: 400; 
+       color: #ffffff; 
+       opacity: 0.9;
+       font-family: 'Geometrica Sans', sans-serif;
+     }
+    .gradient-text {
+      background: linear-gradient(90deg, #073c82 0%, #00d6bc 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      color: #073c82;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🔐 Password Reset Code</h1>
+      <div class="company-name">BlickTrack</div>
+      <div class="company-tagline">One Platform. End-to-End Security Assurance.</div>
+    </div>
+    <div class="content">
+      <h2>Hello ${context.userName}!</h2>
+      <p>We received a request to reset your password for your BlickTrack Security Platform account. To complete the password reset, please use the verification code below.</p>
+      
+      <p><strong>Your password reset code is:</strong></p>
+      
+      <div class="otp-code">
+        <div class="code">${context.otpCode}</div>
+      </div>
+      
+      <div class="warning">
+        <strong>⚠️ Important Security Information:</strong><br>
+        • This code will expire in 5 minutes<br>
+        • Use this code only once<br>
+        • Never share this code with anyone<br>
+        • If you didn't request this, please ignore this email
+      </div>
+      
+      <p>Enter this code in the password reset form to create your new password.</p>
+      
+      <p>If you have any questions, please contact our support team.</p>
+    </div>
+    <div class="footer">
+      <p>© 2024 BlickTrack Security Platform. All rights reserved.</p>
+      <p style="color: #999; font-size: 12px;">This is an automated message, please do not reply.</p>
+    </div>
+  </div>
+</body>
+</html>
+    `.trim();
+    }
     generateWelcomeEmailTemplate(context) {
         return `
 <!DOCTYPE html>
@@ -409,39 +602,121 @@ let EmailService = class EmailService {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Welcome!</title>
+  <title>Welcome to BlickTrack!</title>
   <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background-color: #f4f4f4; }
-    .container { max-width: 600px; margin: 40px auto; background: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-    .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #ffffff; padding: 40px 30px; text-align: center; }
-    .header h1 { margin: 0; font-size: 28px; font-weight: 600; }
-    .content { padding: 40px 30px; }
-    .content h2 { color: #333; font-size: 24px; margin-top: 0; }
-    .content p { color: #666; font-size: 16px; margin: 15px 0; }
-    .button { display: inline-block; padding: 14px 32px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #ffffff !important; text-decoration: none; border-radius: 6px; font-weight: 600; margin: 20px 0; transition: transform 0.2s; }
+    body { 
+      font-family: 'Geometrica Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; 
+      line-height: 1.6; 
+      color: #333; 
+      margin: 0; 
+      padding: 0; 
+      background-color: #f4f4f4; 
+    }
+    .container { 
+      max-width: 600px; 
+      margin: 40px auto; 
+      background: #ffffff; 
+      border-radius: 8px; 
+      overflow: hidden; 
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1); 
+    }
+    .header { 
+      background: linear-gradient(135deg, #073c82 0%, #00d6bc 100%); 
+      color: #ffffff; 
+      padding: 40px 30px; 
+      text-align: center; 
+    }
+    .header h1 { 
+      margin: 0; 
+      font-size: 28px; 
+      font-weight: 600; 
+      font-family: 'Geometrica Sans', sans-serif;
+    }
+    .content { 
+      padding: 40px 30px; 
+    }
+    .content h2 { 
+      color: #333; 
+      font-size: 24px; 
+      margin-top: 0; 
+      font-family: 'Geometrica Sans', sans-serif;
+    }
+    .content p { 
+      color: #666; 
+      font-size: 16px; 
+      margin: 15px 0; 
+    }
+    .button { 
+      display: inline-block; 
+      padding: 14px 32px; 
+      background: linear-gradient(135deg, #073c82 0%, #00d6bc 100%); 
+      color: #ffffff !important; 
+      text-decoration: none; 
+      border-radius: 6px; 
+      font-weight: 600; 
+      margin: 20px 0; 
+      transition: transform 0.2s; 
+    }
     .button:hover { transform: translateY(-2px); }
     .features { margin: 30px 0; }
-    .feature-item { margin: 15px 0; padding-left: 30px; position: relative; }
-    .feature-item:before { content: '✓'; position: absolute; left: 0; color: #667eea; font-weight: bold; font-size: 20px; }
-    .footer { background: #f8f9fa; padding: 20px 30px; text-align: center; font-size: 14px; color: #666; }
-    .footer a { color: #667eea; text-decoration: none; }
+    .feature-item { 
+      margin: 15px 0; 
+      padding-left: 30px; 
+      position: relative; 
+      color: #666;
+    }
+    .feature-item:before { 
+      content: '✓'; 
+      position: absolute; 
+      left: 0; 
+      color: #073c82; 
+      font-weight: bold; 
+      font-size: 20px; 
+    }
+    .footer { 
+      background: #f8fafc; 
+      padding: 20px 30px; 
+      text-align: center; 
+      font-size: 14px; 
+      color: #6b7280; 
+    }
+    .footer a { 
+      color: #073c82; 
+      text-decoration: none; 
+    }
+     .company-name { 
+       font-size: 18px; 
+       font-weight: 600; 
+       color: #ffffff; 
+       margin-bottom: 5px; 
+       font-family: 'Geometrica Sans', sans-serif;
+     }
+     .company-tagline { 
+       font-size: 14px; 
+       font-weight: 400; 
+       color: #ffffff; 
+       opacity: 0.9;
+       font-family: 'Geometrica Sans', sans-serif;
+     }
   </style>
 </head>
 <body>
   <div class="container">
     <div class="header">
-      <h1>🎉 Welcome to ${context.tenantName}!</h1>
+      <h1>🎉 Welcome to BlickTrack!</h1>
+      <div class="company-name">BlickTrack</div>
+      <div class="company-tagline">One Platform. End-to-End Security Assurance.</div>
     </div>
     <div class="content">
-      <h2>Hi ${context.userName},</h2>
-      <p>We're thrilled to have you on board! Your account has been successfully created and you're all set to start using ${context.companyName}.</p>
+      <h2>Hello ${context.userName}!</h2>
+      <p>We're thrilled to have you on board! Your account has been successfully created and you're all set to start using BlickTrack Security Platform.</p>
       
       <div style="text-align: center;">
         <a href="${context.dashboardUrl}" class="button">Go to Dashboard</a>
       </div>
       
       <div class="features">
-        <h3 style="color: #333;">What you can do now:</h3>
+        <h3 style="color: #333; font-family: 'Geometrica Sans', sans-serif;">What you can do now:</h3>
         <div class="feature-item">Complete your profile and customize your settings</div>
         <div class="feature-item">Explore the security dashboard and analytics</div>
         <div class="feature-item">Set up your first security assessment</div>
@@ -453,7 +728,164 @@ let EmailService = class EmailService {
     </div>
     <div class="footer">
       <p>Need help? Contact us at <a href="mailto:${context.supportEmail}">${context.supportEmail}</a></p>
-      <p>© ${new Date().getFullYear()} ${context.companyName}. All rights reserved.</p>
+      <p>© 2024 BlickTrack Security Platform. All rights reserved.</p>
+    </div>
+  </div>
+</body>
+</html>
+    `.trim();
+    }
+    generateOtpEmailTemplate(context) {
+        return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Email Verification Required</title>
+  <style>
+    body { 
+      font-family: 'Geometrica Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; 
+      line-height: 1.6; 
+      color: #333; 
+      margin: 0; 
+      padding: 0; 
+      background-color: #f4f4f4; 
+    }
+    .container { 
+      max-width: 600px; 
+      margin: 40px auto; 
+      background: #ffffff; 
+      border-radius: 8px; 
+      overflow: hidden; 
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1); 
+    }
+    .header { 
+      background: linear-gradient(135deg, #073c82 0%, #00d6bc 100%); 
+      color: #ffffff; 
+      padding: 40px 30px; 
+      text-align: center; 
+    }
+    .header h1 { 
+      margin: 0; 
+      font-size: 28px; 
+      font-weight: 600; 
+      font-family: 'Geometrica Sans', sans-serif;
+    }
+    .content { 
+      padding: 40px 30px; 
+    }
+    .content h2 { 
+      color: #333; 
+      font-size: 24px; 
+      margin-top: 0; 
+      font-family: 'Geometrica Sans', sans-serif;
+    }
+    .content p { 
+      color: #666; 
+      font-size: 16px; 
+      margin: 15px 0; 
+    }
+    .otp-code { 
+      background: #f8fafc; 
+      border: 2px dashed #073c82; 
+      border-radius: 8px; 
+      padding: 20px; 
+      margin: 30px 0; 
+      text-align: center; 
+    }
+    .otp-code .code { 
+      font-size: 32px; 
+      font-weight: bold; 
+      color: #073c82; 
+      letter-spacing: 8px; 
+      font-family: 'JetBrains Mono', 'Fira Code', 'Monaco', 'Cascadia Code', 'Segoe UI Mono', 'Roboto Mono', monospace; 
+    }
+    .otp-code .label { 
+      color: #6b7280; 
+      font-size: 14px; 
+      margin-top: 10px; 
+    }
+    .warning { 
+      background: #fff3cd; 
+      border-left: 4px solid #ffc107; 
+      padding: 15px; 
+      margin: 20px 0; 
+      border-radius: 4px; 
+    }
+    .security-info { 
+      background: #f8fafc; 
+      padding: 15px; 
+      margin: 20px 0; 
+      border-radius: 4px; 
+      font-size: 14px; 
+    }
+    .footer { 
+      background: #f8fafc; 
+      padding: 20px 30px; 
+      text-align: center; 
+      font-size: 14px; 
+      color: #6b7280; 
+    }
+    .footer a { 
+      color: #073c82; 
+      text-decoration: none; 
+    }
+     .company-name { 
+       font-size: 18px; 
+       font-weight: 600; 
+       color: #ffffff; 
+       margin-bottom: 5px; 
+       font-family: 'Geometrica Sans', sans-serif;
+     }
+     .company-tagline { 
+       font-size: 14px; 
+       font-weight: 400; 
+       color: #ffffff; 
+       opacity: 0.9;
+       font-family: 'Geometrica Sans', sans-serif;
+     }
+    .gradient-text {
+      background: linear-gradient(90deg, #073c82 0%, #00d6bc 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      color: #073c82;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+           <div class="header">
+             <h1>🔐 Email Verification Required</h1>
+             <div class="company-name">BlickTrack</div>
+             <div class="company-tagline">Security Unified</div>
+           </div>
+    <div class="content">
+      <h2>Hello ${context.userName}!</h2>
+      <p>Thank you for registering with BlickTrack Security Platform. To complete your registration and secure your account, please verify your email address.</p>
+      
+      <p><strong>Your verification code is:</strong></p>
+      
+      <div class="otp-code">
+        <div class="code">${context.otpCode}</div>
+      </div>
+      
+      <div class="warning">
+        <strong>⚠️ Important Security Information:</strong><br>
+        • This code will expire in 5 minutes<br>
+        • Use this code only once<br>
+        • Never share this code with anyone<br>
+        • If you didn't request this, please ignore this email
+      </div>
+      
+      <p>Enter this code in the verification form to activate your account.</p>
+      
+      <p>If you have any questions, please contact our support team.</p>
+    </div>
+    <div class="footer">
+      <p>© 2024 BlickTrack Security Platform. All rights reserved.</p>
+      <p style="color: #999; font-size: 12px;">This is an automated message, please do not reply.</p>
     </div>
   </div>
 </body>

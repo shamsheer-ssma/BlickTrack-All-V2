@@ -17,6 +17,17 @@ export declare class AuthController {
     verifyEmail(verifyEmailDto: VerifyEmailDto): Promise<{
         message: string;
     }>;
+    sendOtp(sendOtpDto: {
+        email: string;
+    }): Promise<{
+        message: string;
+    }>;
+    verifyOtp(verifyOtpDto: {
+        email: string;
+        otp: string;
+    }): Promise<{
+        message: string;
+    }>;
     changePassword(userId: string, changePasswordDto: ChangePasswordDto): Promise<{
         message: string;
     }>;

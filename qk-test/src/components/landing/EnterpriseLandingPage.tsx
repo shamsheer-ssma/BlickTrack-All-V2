@@ -4,10 +4,9 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import Logo from '../ui/Logo';
-import Button from '../ui/Button';
 import FeatureCard from '../ui/FeatureCard';
+import { BLICKTRACK_THEME, getGradientStyle } from '@/lib/theme';
 import { 
-  ArrowRight,
   Layers,
   FileText,
   MessageSquare,
@@ -15,8 +14,7 @@ import {
   Activity,
   Workflow,
   Link,
-  Users,
-  Shield
+  Users
 } from 'lucide-react';
 
 const EnterpriseLandingPage = () => {
@@ -37,18 +35,10 @@ const EnterpriseLandingPage = () => {
             <div className="flex items-center space-x-6">
               <button 
                 onClick={handleSignIn}
-                className="text-gray-600 hover:text-white font-medium transition-all duration-300 py-2 px-4 rounded-full hover:scale-105"
+                className="text-white font-medium px-6 py-2 rounded-full transition-all duration-300 hover:scale-105"
                 style={{
-                  background: 'transparent',
-                  transition: 'all 0.3s ease'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = 'linear-gradient(90deg, #2563eb 0%, #1e3a8a 100%)';
-                  e.currentTarget.style.boxShadow = '0 4px 6px -1px rgba(37, 99, 235, 0.2)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = 'transparent';
-                  e.currentTarget.style.boxShadow = 'none';
+                  background: 'linear-gradient(135deg, #073c82 0%, #00d6bc 100%)',
+                  boxShadow: '0 4px 6px -1px rgba(7, 60, 130, 0.2)'
                 }}
               >
                 Sign In
@@ -56,8 +46,8 @@ const EnterpriseLandingPage = () => {
               <button 
                 className="text-white font-medium px-6 py-2 rounded-full transition-all duration-300 hover:scale-105"
                 style={{
-                  background: 'linear-gradient(90deg, #2563eb 0%, #1e3a8a 100%)',
-                  boxShadow: '0 4px 6px -1px rgba(37, 99, 235, 0.2)'
+                  background: 'linear-gradient(135deg, #073c82 0%, #00d6bc 100%)',
+                  boxShadow: '0 4px 6px -1px rgba(7, 60, 130, 0.2)'
                 }}
               >
                 Get Started
@@ -68,8 +58,20 @@ const EnterpriseLandingPage = () => {
       </header>
 
       {/* Hero Section */}
-      <section className="bg-white">
-        <div className="w-full px-4 sm:px-6 lg:px-8 py-10">
+      <section 
+        className="relative overflow-hidden"
+        style={{
+          background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 50%, #f1f5f9 100%)',
+        }}
+      >
+        {/* Background Pattern */}
+        <div className="absolute inset-0 opacity-5">
+          <div className="absolute inset-0" style={{
+            backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23073c82' fill-opacity='0.1'%3E%3Ccircle cx='30' cy='30' r='2'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+          }} />
+        </div>
+        
+        <div className="relative w-full px-4 sm:px-6 lg:px-8 py-16">
           <div className="text-center">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -83,67 +85,56 @@ const EnterpriseLandingPage = () => {
                 </div>
                 <div className="text-center mb-10">
                   <h1 
-                    className="text-3xl md:text-4xl lg:text-5xl font-extrabold mb-4 bg-gradient-to-r from-blue-600 via-blue-400 to-blue-700 bg-clip-text text-transparent drop-shadow-lg"
+                    className="text-3xl md:text-4xl lg:text-5xl font-normal mb-4 leading-tight transition-all duration-300 hover:scale-105 cursor-default"
                     style={{
+                      background: 'linear-gradient(90deg, #073c82 0%, #00d6bc 100%)',
                       WebkitBackgroundClip: 'text',
                       WebkitTextFillColor: 'transparent',
                       backgroundClip: 'text',
-                      color: 'transparent',
+                      color: '#073c82',
                       display: 'inline-block',
-                      textShadow: '0 2px 8px rgba(37,99,235,0.10)'
+                      fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+                      fontWeight: '400',
+                      letterSpacing: '-0.025em',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = 'linear-gradient(90deg, #00d6bc 0%, #073c82 100%)';
+                      (e.currentTarget.style as any).webkitBackgroundClip = 'text';
+                      (e.currentTarget.style as any).webkitTextFillColor = 'transparent';
+                      e.currentTarget.style.backgroundClip = 'text';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = 'linear-gradient(90deg, #073c82 0%, #00d6bc 100%)';
+                      (e.currentTarget.style as any).webkitBackgroundClip = 'text';
+                      (e.currentTarget.style as any).webkitTextFillColor = 'transparent';
+                      e.currentTarget.style.backgroundClip = 'text';
                     }}
                   >
-                    One Platform for IT, OT, and Product Security
-                  </h1>
-                  <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-                    Full visibility and control across all cyber security activities.
-                  </p>
-                </div>
-              </div>
-              
-              {/* Sign In Box */}
-              <div className="max-w-md mx-auto mb-8">
-                <div 
-                  className="bg-white rounded-2xl shadow-lg border border-gray-200 p-8 cursor-pointer hover:shadow-xl transition-all duration-300 hover:scale-105 group"
-                  onClick={handleSignIn}
-                >
-                  <div className="text-center">
-                    <div 
-                      className="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform duration-300"
-                      style={{
-                        background: 'linear-gradient(135deg, #2563eb 0%, #1e3a8a 100%)',
-                        boxShadow: '0 4px 6px -1px rgba(37, 99, 235, 0.2)'
-                      }}
-                    >
-                      <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                      </svg>
-                    </div>
-                    <h3 className="text-2xl font-bold mb-2" style={{
-                      background: 'linear-gradient(90deg, #2563eb 0%, #1e3a8a 100%)',
+                    One Platform <span style={{ 
+                      background: 'linear-gradient(90deg, #073c82 0%, #00d6bc 100%)',
                       WebkitBackgroundClip: 'text',
                       WebkitTextFillColor: 'transparent',
                       backgroundClip: 'text',
-                      color: '#2563eb'
-                    }}>
-                      Sign In
-                    </h3>
-                    <p className="text-gray-600 mb-6">
-                      Access your BlickTrack dashboard
-                    </p>
-                    <div 
-                      className="inline-flex items-center px-6 py-3 rounded-full font-medium text-white transition-all duration-300"
-                      style={{
-                        background: 'linear-gradient(90deg, #2563eb 0%, #1e3a8a 100%)',
-                        boxShadow: '0 4px 6px -1px rgba(37, 99, 235, 0.2)'
-                      }}
-                    >
-                      <span>Continue to Login</span>
-                      <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                      </svg>
-                    </div>
-                  </div>
+                      color: '#073c82',
+                      opacity: 0.7
+                    } as React.CSSProperties}>|</span> Any Product <span style={{ 
+                      background: 'linear-gradient(90deg, #073c82 0%, #00d6bc 100%)',
+                      WebkitBackgroundClip: 'text',
+                      WebkitTextFillColor: 'transparent',
+                      backgroundClip: 'text',
+                      color: '#073c82',
+                      opacity: 0.7
+                    } as React.CSSProperties}>|</span> Complete Security Compliance
+                  </h1>
+                  <p 
+                    className="text-lg text-gray-600 max-w-2xl mx-auto leading-relaxed"
+                    style={{
+                      fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+                      fontWeight: '400',
+                    }}
+                  >
+                    Full visibility and control across all cyber security activities.
+                  </p>
                 </div>
               </div>
             </motion.div>
@@ -157,13 +148,16 @@ const EnterpriseLandingPage = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-12">
           <div className="text-center mb-8">
             <h2 
-              className="text-2xl md:text-3xl font-bold mb-4"
+              className="text-2xl md:text-3xl mb-4"
               style={{
-                background: 'linear-gradient(90deg, #2563eb 0%, #1e3a8a 100%)',
+                background: 'linear-gradient(90deg, #073c82 0%, #00d6bc 100%)',
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
                 backgroundClip: 'text',
-                color: '#2563eb',
+                color: '#073c82',
+                fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+                fontWeight: '500',
+                letterSpacing: '-0.025em',
                 display: 'inline-block'
               }}
             >
@@ -195,13 +189,13 @@ const EnterpriseLandingPage = () => {
                 icon: FileText,
                 title: "Auto-Generated Compliance Evidence",
                 problem: "Manual, time-consuming compliance reporting",
-                solution: "Audit-ready reports instantly."
+                solution: "Audit-ready reports instantly for PM, QA, RA, SOC, CISOs, Auditors."
               },
               {
                 icon: Settings,
-                title: "Enterprise-Grade RBAC & Teams",
-                problem: "Complex user management and access control",
-                solution: "Fine-grained access for every user."
+                title: "Enterprise-Grade Security",
+                problem: "Complex user management and access control. ",
+                solution: "Fine-grained access for every user. MFA,SSO,RBAC,ABAC and more."
               },
               {
                 icon: Users,
@@ -217,9 +211,9 @@ const EnterpriseLandingPage = () => {
               },
               {
                 icon: Link,
-                title: "Integrated Collaboration & Integration",
+                title: "Collaboration & Integration",
                 problem: "Disconnected workflows with external partners",
-                solution: "Seamless work with internal teams, external partners, DevSecOps tools, and AI-powered updates."
+                solution: "Seamless work with internal teams, external partners, integrate DevSecOps tools, and AI-powered insights."
               }
             ].map((feature, index) => (
               <motion.div
@@ -242,55 +236,57 @@ const EnterpriseLandingPage = () => {
 
 
       {/* Footer */}
-      <footer className="bg-gray-900 text-white">
+      <footer 
+        className="text-white"
+        style={{
+          background: 'linear-gradient(135deg, #073c82 0%, #00d6bc 100%)',
+        }}
+      >
         <div className="w-full px-4 sm:px-6 lg:px-8 py-16">
           <div className="grid md:grid-cols-4 gap-8">
             <div>
-              <Logo size="sm" showTagline={false} className="mb-4" />
-                    <p className="text-gray-400 text-sm">
-                      Cybersecurity Lifecycle Management
-                    </p>
+              <Logo size="sm" showTagline={true} className="mb-4" variant="light" />
             </div>
             
             <div>
-              <h3 className="text-sm font-semibold text-blue-300 uppercase tracking-wider mb-4">Product</h3>
+              <h3 className="text-sm font-semibold text-white uppercase tracking-wider mb-4">Product</h3>
               <ul className="space-y-2">
-                <li><a href="#" className="text-gray-400 hover:text-white text-sm">Features</a></li>
-                <li><a href="#" className="text-gray-400 hover:text-white text-sm">Pricing</a></li>
-                <li><a href="#" className="text-gray-400 hover:text-white text-sm">API</a></li>
-                <li><a href="#" className="text-gray-400 hover:text-white text-sm">Integrations</a></li>
+                <li><a href="#" className="text-gray-200 hover:text-white text-sm">Features</a></li>
+                <li><a href="#" className="text-gray-200 hover:text-white text-sm">Pricing</a></li>
+                <li><a href="#" className="text-gray-200 hover:text-white text-sm">API</a></li>
+                <li><a href="#" className="text-gray-200 hover:text-white text-sm">Integrations</a></li>
               </ul>
             </div>
             
             <div>
-              <h3 className="text-sm font-semibold text-blue-200 uppercase tracking-wider mb-4">Company</h3>
+              <h3 className="text-sm font-semibold text-white uppercase tracking-wider mb-4">Company</h3>
               <ul className="space-y-2">
-                <li><a href="#" className="text-gray-400 hover:text-white text-sm">About</a></li>
-                <li><a href="#" className="text-gray-400 hover:text-white text-sm">Careers</a></li>
-                <li><a href="#" className="text-gray-400 hover:text-white text-sm">Blog</a></li>
-                <li><a href="#" className="text-gray-400 hover:text-white text-sm">Contact</a></li>
+                <li><a href="#" className="text-gray-200 hover:text-white text-sm">About</a></li>
+                <li><a href="#" className="text-gray-200 hover:text-white text-sm">Careers</a></li>
+                <li><a href="#" className="text-gray-200 hover:text-white text-sm">Blog</a></li>
+                <li><a href="#" className="text-gray-200 hover:text-white text-sm">Contact</a></li>
               </ul>
             </div>
             
             <div>
-              <h3 className="text-sm font-semibold text-blue-100 uppercase tracking-wider mb-4">Support</h3>
+              <h3 className="text-sm font-semibold text-white uppercase tracking-wider mb-4">Support</h3>
               <ul className="space-y-2">
-                <li><a href="#" className="text-gray-400 hover:text-white text-sm">Help Center</a></li>
-                <li><a href="#" className="text-gray-400 hover:text-white text-sm">Documentation</a></li>
-                <li><a href="#" className="text-gray-400 hover:text-white text-sm">Status</a></li>
-                <li><a href="#" className="text-gray-400 hover:text-white text-sm">Security</a></li>
+                <li><a href="#" className="text-gray-200 hover:text-white text-sm">Help Center</a></li>
+                <li><a href="#" className="text-gray-200 hover:text-white text-sm">Documentation</a></li>
+                <li><a href="#" className="text-gray-200 hover:text-white text-sm">Status</a></li>
+                <li><a href="#" className="text-gray-200 hover:text-white text-sm">Security</a></li>
               </ul>
             </div>
           </div>
           
-          <div className="border-t border-gray-800 mt-8 pt-8 flex flex-col md:flex-row justify-between items-center">
-            <p className="text-gray-400 text-sm">
+          <div className="border-t border-gray-300 mt-8 pt-8 flex flex-col md:flex-row justify-between items-center">
+            <p className="text-gray-200 text-sm">
               © 2025 BlickTrack. All rights reserved.
             </p>
             <div className="flex space-x-6 mt-4 md:mt-0">
-              <a href="#" className="text-blue-300 hover:text-white text-sm">Privacy Policy</a>
-              <a href="#" className="text-blue-200 hover:text-white text-sm">Terms of Service</a>
-              <a href="#" className="text-blue-100 hover:text-white text-sm">Cookie Policy</a>
+              <a href="#" className="text-gray-200 hover:text-white text-sm">Privacy Policy</a>
+              <a href="#" className="text-gray-200 hover:text-white text-sm">Terms of Service</a>
+              <a href="#" className="text-gray-200 hover:text-white text-sm">Cookie Policy</a>
             </div>
           </div>
         </div>

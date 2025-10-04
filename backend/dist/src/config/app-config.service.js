@@ -69,16 +69,16 @@ let AppConfigService = class AppConfigService {
         return this.configService.get('BCRYPT_ROUNDS') || 12;
     }
     get smtpHost() {
-        return this.configService.get('SMTP_HOST') || 'smtp.gmail.com';
+        return this.configService.get('EMAIL_SMTP_HOST') || 'smtp.gmail.com';
     }
     get smtpPort() {
-        return this.configService.get('SMTP_PORT') || 587;
+        return this.configService.get('EMAIL_SMTP_PORT') || 587;
     }
     get smtpUser() {
-        return this.configService.get('SMTP_USER') || '';
+        return this.configService.get('EMAIL_USER') || '';
     }
     get smtpPass() {
-        return this.configService.get('SMTP_PASS') || '';
+        return this.configService.get('EMAIL_PASS') || '';
     }
     get haveibeenpwnedApiKey() {
         return this.configService.get('HAVEIBEENPWNED_API_KEY') || '';

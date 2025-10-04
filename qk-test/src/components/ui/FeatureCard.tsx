@@ -1,5 +1,6 @@
 import React from 'react';
 import { LucideIcon } from 'lucide-react';
+import { BLICKTRACK_THEME, getCardStyle } from '@/lib/theme';
 
 interface FeatureCardProps {
   icon: LucideIcon;
@@ -15,21 +16,44 @@ const FeatureCard: React.FC<FeatureCardProps> = ({
   solution,
   className = '',
 }) => {
+  const cardStyle = getCardStyle();
+  
   return (
-    <div className={`bg-white border border-gray-200 rounded-xl p-6 hover:shadow-xl hover:border-blue-300 transition-all duration-300 group h-full flex flex-col ${className}`}>
-      <div 
+    <div 
+      className={`p-6 hover:shadow-xl transition-all duration-300 group h-full flex flex-col ${className}`}
+      style={cardStyle}
+    >
+      <div
         className="w-14 h-14 rounded-xl flex items-center justify-center mb-5 group-hover:scale-110 transition-all duration-300 mx-auto"
         style={{
-          background: 'linear-gradient(135deg, #2563eb 0%, #1e3a8a 100%)',
-          boxShadow: '0 4px 6px -1px rgba(37, 99, 235, 0.2), 0 2px 4px -1px rgba(30, 58, 138, 0.1)'
+          background: BLICKTRACK_THEME.colors.gradients.primary,
+          boxShadow: BLICKTRACK_THEME.colors.shadows.primary,
         }}
       >
         <Icon className="w-7 h-7 text-white" />
       </div>
-      <h3 className="text-lg font-bold text-blue-900 mb-3 group-hover:text-blue-600 transition-colors text-center">
+      <h3 
+        className="text-lg font-bold mb-3 group-hover:transition-colors text-center"
+        style={{
+          color: BLICKTRACK_THEME.colors.primary.blue,
+          fontFamily: BLICKTRACK_THEME.typography.fontFamily.primary,
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.color = BLICKTRACK_THEME.colors.primary.teal;
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.color = BLICKTRACK_THEME.colors.primary.blue;
+        }}
+      >
         {title}
       </h3>
-      <p className="text-sm text-gray-600 leading-relaxed flex-grow text-center">
+      <p 
+        className="text-sm leading-relaxed flex-grow text-center"
+        style={{
+          color: BLICKTRACK_THEME.colors.text.muted,
+          fontFamily: BLICKTRACK_THEME.typography.fontFamily.primary,
+        }}
+      >
         {solution}
       </p>
     </div>

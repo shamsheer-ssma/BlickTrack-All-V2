@@ -58,7 +58,7 @@ export class UsersService {
     // Hash password if provided
     let hashedPassword: string | undefined;
     if (password) {
-      hashedPassword = await bcrypt.hash(password, 12);
+      hashedPassword = await bcrypt.hash(password, parseInt(process.env.BCRYPT_ROUNDS || '12', 10));
     }
 
     const user = await this.prisma.user.create({
@@ -129,7 +129,7 @@ export class UsersService {
     let hashedPassword: string | undefined;
 
     if (password) {
-      hashedPassword = await bcrypt.hash(password, 12);
+      hashedPassword = await bcrypt.hash(password, parseInt(process.env.BCRYPT_ROUNDS || '12', 10));
     }
 
     const user = await this.prisma.user.update({

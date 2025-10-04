@@ -148,11 +148,29 @@ async function main() {
     },
   });
 
-  console.log('✅ Created 4 enterprise tenants:');
+  // Create Gmail tenant for @gmail.com users
+  const gmail = await prisma.tenant.create({
+    data: {
+      name: 'Gmail Users',
+      slug: 'gmail',
+      domain: 'gmail.com',
+      planId: professionalPlan.id,
+      status: 'ACTIVE',
+      isTrial: true,
+      isActive: true,
+      mfaRequired: false,
+      dataResidency: 'US',
+      complianceFrameworks: ['GDPR'],
+      apiQuotaDaily: 10000,
+    },
+  });
+
+  console.log('✅ Created 5 enterprise tenants:');
   console.log(`  - ${blickTrack.name} (${enterprisePlan.displayName}) - ${blickTrack.domain}`);
   console.log(`  - ${huawei.name} (${enterprisePlan.displayName}) - ${huawei.domain}`);
   console.log(`  - ${boeing.name} (${enterprisePlan.displayName}) - ${boeing.domain}`);
   console.log(`  - ${utc.name} (${professionalPlan.displayName}) - ${utc.domain}`);
+  console.log(`  - ${gmail.name} (${professionalPlan.displayName}) - ${gmail.domain}`);
 
   // 3. Create Features with Different Categories
   console.log('⚡ Creating features for different security contexts...');
@@ -894,11 +912,26 @@ async function main() {
     }
   });
 
+  // Gmail tenant configuration
+  await prisma.tenantConfiguration.create({
+    data: {
+      tenantId: gmail.id,
+      enableLandingPage: true,
+      enableRegistration: true,
+      enable2FA: false,
+      enableDarkMode: true,
+      theme: 'modern',
+      primaryColor: '#ea4335', // Gmail red color
+      ssoEnabled: false,
+    }
+  });
+
   console.log('✅ Created tenant configurations:');
   console.log('  🏢 BlickTrack: Landing page enabled (corporate theme)');
   console.log('  🏢 Boeing: Direct login (aerospace theme)');
   console.log('  🏢 Huawei: Landing page enabled (corporate theme)');
   console.log('  🏢 UTC: Direct login (aerospace theme)');
+  console.log('  📧 Gmail: Landing page enabled (modern theme)');
 }
 
 main()

@@ -47,7 +47,7 @@ export class RegisterDto {
 
   @ApiProperty({ example: 'SecurePassword123!' })
   @IsString()
-  @MinLength(12, { message: 'Password must be at least 12 characters long' })
+  @MinLength(8, { message: 'Password must be at least 8 characters long' })
   password: string;
 
   @ApiProperty({ example: 'John Doe', required: false })
@@ -84,7 +84,7 @@ export class ResetPasswordDto {
 
   @ApiProperty({ example: 'NewSecurePassword123!' })
   @IsString()
-  @MinLength(12, { message: 'Password must be at least 12 characters long' })
+  @MinLength(8, { message: 'Password must be at least 8 characters long' })
   newPassword: string;
 }
 
@@ -95,7 +95,7 @@ export class ChangePasswordDto {
 
   @ApiProperty({ example: 'NewSecurePassword123!' })
   @IsString()
-  @MinLength(12, { message: 'Password must be at least 12 characters long' })
+  @MinLength(8, { message: 'Password must be at least 8 characters long' })
   newPassword: string;
 }
 

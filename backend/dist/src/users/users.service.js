@@ -56,7 +56,7 @@ let UsersService = class UsersService {
         const { password, ...userData } = createUserDto;
         let hashedPassword;
         if (password) {
-            hashedPassword = await bcrypt.hash(password, 12);
+            hashedPassword = await bcrypt.hash(password, parseInt(process.env.BCRYPT_ROUNDS || '12', 10));
         }
         const user = await this.prisma.user.create({
             data: {
@@ -115,7 +115,7 @@ let UsersService = class UsersService {
         const { password, ...updateData } = updateUserDto;
         let hashedPassword;
         if (password) {
-            hashedPassword = await bcrypt.hash(password, 12);
+            hashedPassword = await bcrypt.hash(password, parseInt(process.env.BCRYPT_ROUNDS || '12', 10));
         }
         const user = await this.prisma.user.update({
             where: { id },

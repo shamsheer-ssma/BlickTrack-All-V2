@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visual Distinction Demo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+</head>
+<body class="bg-gray-50">
+    <div class="min-h-screen p-8">
+        <h1 class="text-3xl font-bold text-gray-900 mb-8">Visual Distinction Demo</h1>
+        
+        <!-- Legend -->
+        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+            <h2 class="text-lg font-semibold text-gray-900 mb-3">Visual Legend</h2>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                <div class="flex items-center space-x-2">
+                    <div class="w-4 h-4 bg-blue-600 rounded"></div>
+                    <span>Categories</span>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <div class="w-4 h-4 bg-gray-600 rounded-full"></div>
+                    <span>Regular Features</span>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <div class="w-4 h-4 bg-yellow-600 rounded-full"></div>
+                    <span>Premium Features</span>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <div class="w-4 h-4 bg-purple-600 rounded-full"></div>
+                    <span>License Required</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Categories with Features -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <!-- Security Category -->
+            <div class="bg-white rounded-lg shadow-sm p-6 border-l-4 border-red-500">
+                <div class="flex items-center space-x-3 mb-4">
+                    <div class="w-10 h-10 bg-red-500 rounded-lg flex items-center justify-center text-white text-lg">
+                        🛡️
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-900">Security</h3>
+                        <p class="text-sm text-gray-600">Security features</p>
+                    </div>
+                </div>
+                <div class="space-y-2">
+                    <div class="flex items-center space-x-2 p-2 bg-gray-50 rounded">
+                        <div class="w-3 h-3 bg-gray-600 rounded-full"></div>
+                        <span class="text-sm">Threat Modeling</span>
+                    </div>
+                    <div class="flex items-center space-x-2 p-2 bg-gray-50 rounded ml-4">
+                        <div class="w-3 h-3 bg-gray-600 rounded-full"></div>
+                        <span class="text-sm">Basic Threat Modeling</span>
+                    </div>
+                    <div class="flex items-center space-x-2 p-2 bg-gray-50 rounded ml-4">
+                        <div class="w-3 h-3 bg-gray-600 rounded-full"></div>
+                        <span class="text-sm">AI Enhanced Threat Modeling</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Compliance Category -->
+            <div class="bg-white rounded-lg shadow-sm p-6 border-l-4 border-blue-500">
+                <div class="flex items-center space-x-3 mb-4">
+                    <div class="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center text-white text-lg">
+                        ⚖️
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-900">Compliance</h3>
+                        <p class="text-sm text-gray-600">Compliance features</p>
+                    </div>
+                </div>
+                <div class="space-y-2">
+                    <div class="flex items-center space-x-2 p-2 bg-gray-50 rounded">
+                        <div class="w-3 h-3 bg-purple-600 rounded-full"></div>
+                        <span class="text-sm">Compliance Management</span>
+                        <span class="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded-full">License</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Analytics Category -->
+            <div class="bg-white rounded-lg shadow-sm p-6 border-l-4 border-green-500">
+                <div class="flex items-center space-x-3 mb-4">
+                    <div class="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center text-white text-lg">
+                        📈
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-900">Analytics</h3>
+                        <p class="text-sm text-gray-600">Analytics features</p>
+                    </div>
+                </div>
+                <div class="space-y-2">
+                    <div class="flex items-center space-x-2 p-2 bg-gray-50 rounded">
+                        <div class="w-3 h-3 bg-cyan-600 rounded-full"></div>
+                        <span class="text-sm">Analytics Dashboard</span>
+                        <span class="text-xs bg-cyan-100 text-cyan-800 px-2 py-1 rounded-full">Add-on</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Interactive Dropdown Example -->
+        <div class="bg-white rounded-lg shadow-sm p-6">
+            <h2 class="text-xl font-semibold text-gray-900 mb-4">Interactive Dropdown Example</h2>
+            
+            <!-- Category Dropdown -->
+            <div class="space-y-2">
+                <button onclick="toggleCategory('security')" class="w-full flex items-center justify-between p-4 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-8 h-8 bg-red-500 rounded-lg flex items-center justify-center text-white">
+                            🛡️
+                        </div>
+                        <div class="text-left">
+                            <h3 class="font-semibold text-gray-900">Security</h3>
+                            <p class="text-sm text-gray-600">3 features</p>
+                        </div>
+                    </div>
+                    <div id="security-arrow" class="transform transition-transform">▼</div>
+                </button>
+                
+                <div id="security-features" class="ml-6 space-y-1 hidden">
+                    <div class="flex items-center space-x-2 p-2 rounded hover:bg-gray-50">
+                        <div class="w-3 h-3 bg-gray-600 rounded-full"></div>
+                        <span class="text-sm">Threat Modeling</span>
+                    </div>
+                    <div class="flex items-center space-x-2 p-2 rounded hover:bg-gray-50">
+                        <div class="w-3 h-3 bg-gray-600 rounded-full"></div>
+                        <span class="text-sm">Basic Threat Modeling</span>
+                    </div>
+                    <div class="flex items-center space-x-2 p-2 rounded hover:bg-gray-50">
+                        <div class="w-3 h-3 bg-gray-600 rounded-full"></div>
+                        <span class="text-sm">AI Enhanced Threat Modeling</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Feature Details -->
+        <div class="mt-8 bg-white rounded-lg shadow-sm p-6">
+            <h2 class="text-xl font-semibold text-gray-900 mb-4">Visual Distinctions Explained</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <h3 class="text-lg font-medium text-gray-900 mb-2">Categories</h3>
+                    <ul class="space-y-2 text-sm text-gray-600">
+                        <li>• <strong>Shape:</strong> Square icons with colored left border</li>
+                        <li>• <strong>Color:</strong> Each category has its own color scheme</li>
+                        <li>• <strong>Icon:</strong> Emoji or icon representing the category</li>
+                        <li>• <strong>Layout:</strong> Larger, more prominent display</li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="text-lg font-medium text-gray-900 mb-2">Features</h3>
+                    <ul class="space-y-2 text-sm text-gray-600">
+                        <li>• <strong>Shape:</strong> Circular icons for easy distinction</li>
+                        <li>• <strong>Color:</strong> Based on feature type (premium, license, etc.)</li>
+                        <li>• <strong>Badges:</strong> Text labels for special features</li>
+                        <li>• <strong>Layout:</strong> Indented under categories</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function toggleCategory(categoryId) {
+            const features = document.getElementById(categoryId + '-features');
+            const arrow = document.getElementById(categoryId + '-arrow');
+            
+            if (features.classList.contains('hidden')) {
+                features.classList.remove('hidden');
+                arrow.style.transform = 'rotate(180deg)';
+            } else {
+                features.classList.add('hidden');
+                arrow.style.transform = 'rotate(0deg)';
+            }
+        }
+    </script>
+</body>
+</html>
+

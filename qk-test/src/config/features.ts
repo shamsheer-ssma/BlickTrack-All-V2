@@ -66,7 +66,13 @@ export const APP_CONFIG = {
   supportEmail: process.env.NEXT_PUBLIC_SUPPORT_EMAIL || 'support@blicktrack.com',
   
   // API Configuration (Future)
-  apiUrl: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000',
+  apiUrl: (() => {
+    const url = process.env.NEXT_PUBLIC_API_URL;
+    if (!url) {
+      throw new Error('NEXT_PUBLIC_API_URL environment variable is required. Please set it in your .env.local file.');
+    }
+    return url as string;
+  })(),
   apiTimeout: Number(process.env.NEXT_PUBLIC_API_TIMEOUT) || 30000,
 } as const;
 

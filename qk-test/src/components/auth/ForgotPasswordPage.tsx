@@ -41,14 +41,18 @@ export default function ForgotPasswordPage() {
         body: JSON.stringify({ email }),
       });
 
-      setIsSubmitted(true);
+      // Store email for OTP verification
+      localStorage.setItem('pendingPasswordResetEmail', email);
+
+      // Redirect to OTP verification page
+      router.push(`/reset-password-otp?email=${encodeURIComponent(email)}`);
     } catch (error) {
       console.error('Forgot password error:', error);
       
       if (error instanceof Error) {
         setError(error.message);
       } else {
-        setError('Failed to send reset email. Please try again.');
+        setError('Failed to send reset code. Please try again.');
       }
     } finally {
       setIsLoading(false);
@@ -94,7 +98,7 @@ export default function ForgotPasswordPage() {
             </h1>
             
             <p className="text-gray-600 mb-6">
-              We've sent a password reset link to <strong>{email}</strong>. 
+              We&apos;ve sent a password reset link to <strong>{email}</strong>. 
               Please check your email and follow the instructions to reset your password.
             </p>
             
@@ -111,7 +115,10 @@ export default function ForgotPasswordPage() {
               </button>
               
               <button
-                onClick={() => setEmail(''); setIsSubmitted(false)}
+                onClick={() => {
+                  setEmail('');
+                  setIsSubmitted(false);
+                }}
                 className="w-full py-2 px-4 rounded-xl font-medium text-gray-600 hover:text-gray-800 transition-colors"
               >
                 Try Different Email
@@ -153,7 +160,7 @@ export default function ForgotPasswordPage() {
               Forgot Password?
             </h1>
             <p className="text-gray-600 text-sm">
-              Enter your email address and we'll send you a link to reset your password.
+              Enter your email address and we&apos;ll send you a verification code to reset your password.
             </p>
           </div>
 
@@ -190,7 +197,7 @@ export default function ForgotPasswordPage() {
                 boxShadow: '0 4px 6px -1px rgba(37, 99, 235, 0.2)'
               }}
             >
-              {isLoading ? 'Sending...' : 'Send Reset Link'}
+              {isLoading ? 'Sending...' : 'Send Reset Code'}
             </button>
           </form>
 

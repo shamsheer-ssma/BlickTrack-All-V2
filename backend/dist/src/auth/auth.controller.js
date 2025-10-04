@@ -41,6 +41,12 @@ let AuthController = class AuthController {
     async verifyEmail(verifyEmailDto) {
         return this.authService.verifyEmail(verifyEmailDto);
     }
+    async sendOtp(sendOtpDto) {
+        return this.authService.sendOtp(sendOtpDto.email);
+    }
+    async verifyOtp(verifyOtpDto) {
+        return this.authService.verifyOtp(verifyOtpDto.email, verifyOtpDto.otp);
+    }
     async changePassword(userId, changePasswordDto) {
         return this.authService.changePassword(userId, changePasswordDto);
     }
@@ -125,6 +131,28 @@ __decorate([
     __metadata("design:paramtypes", [auth_dto_1.VerifyEmailDto]),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "verifyEmail", null);
+__decorate([
+    (0, common_1.Post)('send-otp'),
+    (0, common_1.HttpCode)(common_1.HttpStatus.OK),
+    (0, swagger_1.ApiOperation)({ summary: 'Send OTP to email for verification' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'OTP sent successfully' }),
+    (0, swagger_1.ApiResponse)({ status: 400, description: 'Invalid email or user not found' }),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], AuthController.prototype, "sendOtp", null);
+__decorate([
+    (0, common_1.Post)('verify-otp'),
+    (0, common_1.HttpCode)(common_1.HttpStatus.OK),
+    (0, swagger_1.ApiOperation)({ summary: 'Verify OTP code' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'OTP verified successfully' }),
+    (0, swagger_1.ApiResponse)({ status: 400, description: 'Invalid or expired OTP' }),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], AuthController.prototype, "verifyOtp", null);
 __decorate([
     (0, common_1.Patch)('change-password'),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),

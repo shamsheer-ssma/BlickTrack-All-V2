@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Mail, Lock, User, Eye, EyeOff, CheckCircle } from 'lucide-react';
+import { ArrowRight, Mail, Lock, User, Eye, EyeOff } from 'lucide-react';
 import Logo from '../ui/Logo';
 import { apiService } from '@/lib/api';
 
@@ -18,7 +18,6 @@ export default function SignupPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [isSubmitted, setIsSubmitted] = useState(false);
   const [errors, setErrors] = useState<{[key: string]: string}>({});
   const router = useRouter();
 
@@ -41,10 +40,8 @@ export default function SignupPage() {
 
     if (!formData.password) {
       newErrors.password = 'Password is required';
-    } else if (formData.password.length < 12) {
-      newErrors.password = 'Password must be at least 12 characters long';
-    } else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/.test(formData.password)) {
-      newErrors.password = 'Password must contain uppercase, lowercase, numbers, and special characters';
+    } else if (formData.password.length < 8) {
+      newErrors.password = 'Password must be at least 8 characters long';
     }
 
     if (!formData.confirmPassword) {
@@ -80,7 +77,12 @@ export default function SignupPage() {
         }),
       });
 
-      setIsSubmitted(true);
+      // Store email for OTP verification
+      localStorage.setItem('pendingVerificationEmail', formData.email);
+      
+      // Redirect to OTP verification page
+      router.push(`/verify-otp?email=${encodeURIComponent(formData.email)}`);
+      
     } catch (error) {
       console.error('Registration error:', error);
       
@@ -114,60 +116,6 @@ export default function SignupPage() {
     router.push('/login');
   };
 
-  if (isSubmitted) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <div className="w-full max-w-sm">
-          {/* Logo */}
-          <div className="flex justify-center mb-8">
-            <div 
-              className="cursor-pointer hover:scale-105 transition-transform duration-200"
-              onClick={() => router.push('/')}
-            >
-              <Logo size="lg" showTagline={true} />
-            </div>
-          </div>
-
-          {/* Success Message */}
-          <div className="bg-white rounded-xl shadow-lg p-6 text-center">
-            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-green-100 flex items-center justify-center">
-              <CheckCircle className="w-8 h-8 text-green-600" />
-            </div>
-            
-            <h1 
-              className="text-xl font-bold mb-4"
-              style={{
-                background: 'linear-gradient(90deg, #2563eb 0%, #1e3a8a 100%)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                backgroundClip: 'text',
-                color: '#2563eb',
-                display: 'inline-block'
-              }}
-            >
-              Account Created!
-            </h1>
-            
-            <p className="text-gray-600 mb-6">
-              We've sent a verification email to <strong>{formData.email}</strong>. 
-              Please check your email and click the verification link to activate your account.
-            </p>
-            
-            <button
-              onClick={handleBackToLogin}
-              className="w-full py-3 px-4 rounded-xl font-medium text-white transition-all duration-300 hover:scale-105"
-              style={{
-                background: 'linear-gradient(90deg, #2563eb 0%, #1e3a8a 100%)',
-                boxShadow: '0 4px 6px -1px rgba(37, 99, 235, 0.2)'
-              }}
-            >
-              Continue to Login
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
@@ -188,19 +136,16 @@ export default function SignupPage() {
             <h1 
               className="text-xl font-bold mb-2"
               style={{
-                background: 'linear-gradient(90deg, #2563eb 0%, #1e3a8a 100%)',
+                background: 'linear-gradient(90deg, #073c82 0%, #00d6bc 100%)',
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
                 backgroundClip: 'text',
-                color: '#2563eb',
+                color: '#073c82',
                 display: 'inline-block'
               }}
             >
               Create Account
             </h1>
-            <p className="text-gray-600 text-sm">
-              Join BlickTrack to get started with your security management.
-            </p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -217,7 +162,7 @@ export default function SignupPage() {
                     name="firstName"
                     value={formData.firstName}
                     onChange={handleInputChange}
-                    className={`w-full pl-10 pr-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${
+                    className={`w-full pl-10 pr-4 py-3 border rounded-xl focus:ring-2 focus:ring-[#073c82] focus:border-transparent transition-all duration-200 ${
                       errors.firstName ? 'border-red-500' : 'border-gray-300 hover:border-gray-400'
                     }`}
                     placeholder="John"
@@ -239,7 +184,7 @@ export default function SignupPage() {
                     name="lastName"
                     value={formData.lastName}
                     onChange={handleInputChange}
-                    className={`w-full pl-10 pr-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${
+                    className={`w-full pl-10 pr-4 py-3 border rounded-xl focus:ring-2 focus:ring-[#073c82] focus:border-transparent transition-all duration-200 ${
                       errors.lastName ? 'border-red-500' : 'border-gray-300 hover:border-gray-400'
                     }`}
                     placeholder="Doe"
@@ -263,7 +208,7 @@ export default function SignupPage() {
                   name="email"
                   value={formData.email}
                   onChange={handleInputChange}
-                  className={`w-full pl-10 pr-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${
+                  className={`w-full pl-10 pr-4 py-3 border rounded-xl focus:ring-2 focus:ring-[#073c82] focus:border-transparent transition-all duration-200 ${
                     errors.email ? 'border-red-500' : 'border-gray-300 hover:border-gray-400'
                   }`}
                   placeholder="john@company.com"
@@ -286,10 +231,10 @@ export default function SignupPage() {
                   name="password"
                   value={formData.password}
                   onChange={handleInputChange}
-                  className={`w-full pl-10 pr-12 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${
+                  className={`w-full pl-10 pr-12 py-3 border rounded-xl focus:ring-2 focus:ring-[#073c82] focus:border-transparent transition-all duration-200 ${
                     errors.password ? 'border-red-500' : 'border-gray-300 hover:border-gray-400'
                   }`}
-                  placeholder="At least 12 chars with A-Z, a-z, 0-9, and symbols"
+                  placeholder="At least 8 characters"
                 />
                 <button
                   type="button"
@@ -316,7 +261,7 @@ export default function SignupPage() {
                   name="confirmPassword"
                   value={formData.confirmPassword}
                   onChange={handleInputChange}
-                  className={`w-full pl-10 pr-12 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${
+                  className={`w-full pl-10 pr-12 py-3 border rounded-xl focus:ring-2 focus:ring-[#073c82] focus:border-transparent transition-all duration-200 ${
                     errors.confirmPassword ? 'border-red-500' : 'border-gray-300 hover:border-gray-400'
                   }`}
                   placeholder="Confirm your password"
@@ -342,15 +287,15 @@ export default function SignupPage() {
                   name="agreeToTerms"
                   checked={formData.agreeToTerms}
                   onChange={handleInputChange}
-                  className="mt-1 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  className="mt-1 rounded border-gray-300 text-[#073c82] focus:ring-[#073c82]"
                 />
                 <span className="ml-2 text-sm text-gray-600">
                   I agree to the{' '}
-                  <a href="#" className="text-blue-600 hover:text-blue-800 font-medium">
+                  <a href="#" className="text-[#073c82] hover:text-[#00d6bc] font-medium">
                     Terms of Service
                   </a>{' '}
                   and{' '}
-                  <a href="#" className="text-blue-600 hover:text-blue-800 font-medium">
+                  <a href="#" className="text-[#073c82] hover:text-[#00d6bc] font-medium">
                     Privacy Policy
                   </a>
                 </span>
@@ -366,8 +311,8 @@ export default function SignupPage() {
               disabled={isLoading}
               className="w-full py-3 px-4 rounded-xl font-medium text-white transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
               style={{
-                background: 'linear-gradient(90deg, #2563eb 0%, #1e3a8a 100%)',
-                boxShadow: '0 4px 6px -1px rgba(37, 99, 235, 0.2)'
+                background: 'linear-gradient(90deg, #073c82 0%, #00d6bc 100%)',
+                boxShadow: '0 4px 6px -1px rgba(7, 60, 130, 0.2)'
               }}
             >
               {isLoading ? 'Creating Account...' : 'Create Account'}
@@ -378,10 +323,9 @@ export default function SignupPage() {
           <div className="mt-6 text-center">
             <button
               onClick={handleBackToLogin}
-              className="flex items-center justify-center text-sm text-gray-600 hover:text-gray-800 transition-colors"
+              className="text-base font-medium text-[#073c82] hover:text-[#00d6bc] transition-colors"
             >
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Already have an account? Sign in
+              Already have an account? <span className="underline">Sign in</span>
             </button>
           </div>
         </div>
