@@ -396,9 +396,36 @@ class ApiService {
     role: string;
     description: string;
   }> {
-    // This is dummy data, need to fetch from DB
     return this.request('/dashboard/users', {
       method: 'GET',
+    });
+  }
+
+  async updateUser(userId: string, updateData: {
+    firstName?: string;
+    lastName?: string;
+    displayName?: string;
+    email?: string;
+    role?: string;
+    isVerified?: boolean;
+    mfaEnabled?: boolean;
+  }): Promise<{
+    success: boolean;
+    message: string;
+    user: User;
+  }> {
+    return this.request(`/dashboard/users/${userId}`, {
+      method: 'PUT',
+      body: JSON.stringify(updateData),
+    });
+  }
+
+  async deleteUser(userId: string): Promise<{
+    success: boolean;
+    message: string;
+  }> {
+    return this.request(`/dashboard/users/${userId}`, {
+      method: 'DELETE',
     });
   }
 }

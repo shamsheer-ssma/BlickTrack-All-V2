@@ -30,7 +30,10 @@ import {
   Cpu,
   Wifi,
   Menu,
-  RefreshCw
+  RefreshCw,
+  User,
+  LogOut,
+  ChevronDown
 } from 'lucide-react';
 import { apiService } from '@/lib/api';
 // import { BLICKTRACK_THEME } from '@/lib/theme';
@@ -179,6 +182,7 @@ export default function UnifiedDashboard() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [showUserMenu, setShowUserMenu] = useState(false);
   const [currentView, setCurrentView] = useState<'dashboard' | 'users' | 'tenants' | 'system' | 'analytics'>('dashboard');
 
   useEffect(() => {
@@ -197,7 +201,7 @@ export default function UnifiedDashboard() {
     };
   }, []);
 
-  // Close search results and notifications when clicking outside
+  // Close search results, notifications, and user menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Element;
@@ -206,6 +210,9 @@ export default function UnifiedDashboard() {
       }
       if (!target.closest('.notification-container')) {
         setShowNotifications(false);
+      }
+      if (!target.closest('.user-menu-container')) {
+        setShowUserMenu(false);
       }
     };
 
@@ -315,6 +322,18 @@ export default function UnifiedDashboard() {
       setIsRefreshing(false);
     }
   }, [isRefreshing]);
+
+  // Logout function
+  const handleLogout = async () => {
+    try {
+      await apiService.logout();
+      router.push('/login');
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Force logout on client side even if API call fails
+      router.push('/login');
+    }
+  };
 
   // Add mock notification
   const addMockNotification = () => {
@@ -831,36 +850,118 @@ export default function UnifiedDashboard() {
                 </span>
               </div>
               
-              {/* User Profile Info */}
+              {/* User Profile Info with Dropdown */}
               {userProfile && (
-                <div className="flex items-center space-x-3 bg-white/10 rounded-lg px-3 py-2 border border-white/20 backdrop-blur-sm">
-                  {/* User Initials Circle - Glass Morphism Effect */}
-                  <div className="relative w-8 h-8 rounded-full flex items-center justify-center overflow-hidden group">
-                    {/* Gradient Background */}
-                    <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-white/5 backdrop-blur-sm"></div>
+                <div className="relative user-menu-container">
+                  <div
+                    className="flex items-center space-x-3 cursor-pointer group"
+                    onMouseEnter={() => setShowUserMenu(true)}
+                    onMouseLeave={() => setShowUserMenu(false)}
+                  >
+                    {/* User Initials Circle - Glass Morphism Effect */}
+                    <div className="relative w-8 h-8 rounded-full flex items-center justify-center overflow-hidden group">
+                      {/* Gradient Background */}
+                      <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-white/5 backdrop-blur-sm"></div>
 
-                    {/* Animated Gradient Border */}
-                    <div className="absolute inset-0 rounded-full p-[1px] bg-gradient-to-r from-[#073c82] via-[#00d6bc] to-[#073c82]">
-                      <div className="w-full h-full rounded-full bg-gradient-to-br from-white/15 to-white/5 backdrop-blur-sm flex items-center justify-center group-hover:from-white/25 group-hover:to-white/10 transition-all duration-300">
-                        {/* User Initials */}
-                        <span className="font-bold text-xs text-white drop-shadow-sm relative z-10">
-                          {`${userProfile.firstName?.[0] || ''}${userProfile.lastName?.[0] || ''}`.toUpperCase()}
-                        </span>
+                      {/* Animated Gradient Border */}
+                      <div className="absolute inset-0 rounded-full p-[1px] bg-gradient-to-r from-[#073c82] via-[#00d6bc] to-[#073c82]">
+                        <div className="w-full h-full rounded-full bg-gradient-to-br from-white/15 to-white/5 backdrop-blur-sm flex items-center justify-center group-hover:from-white/25 group-hover:to-white/10 transition-all duration-300">
+                          {/* User Initials */}
+                          <span className="font-bold text-xs text-white drop-shadow-sm relative z-10">
+                            {`${userProfile.firstName?.[0] || ''}${userProfile.lastName?.[0] || ''}`.toUpperCase()}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Subtle Inner Glow */}
+                      <div className="absolute inset-1 rounded-full bg-gradient-to-br from-white/10 to-transparent opacity-50"></div>
+                    </div>
+
+                    <div className="text-left">
+                      <div className="font-semibold text-xs text-white drop-shadow-sm">
+                        {userProfile.firstName} {userProfile.lastName}
+                      </div>
+                      <div className="text-xs text-white/80 drop-shadow-sm">
+                        {userProfile.tenantName}
                       </div>
                     </div>
 
-                    {/* Subtle Inner Glow */}
-                    <div className="absolute inset-1 rounded-full bg-gradient-to-br from-white/10 to-transparent opacity-50"></div>
+                    {/* Dropdown Arrow */}
+                    <ChevronDown className={`w-3 h-3 text-white/80 transition-transform duration-200 ${showUserMenu ? 'rotate-180' : ''}`} />
                   </div>
 
-                  <div className="text-left">
-                    <div className="font-semibold text-xs text-white drop-shadow-sm">
-                      {userProfile.firstName} {userProfile.lastName}
+                  {/* User Menu Dropdown */}
+                  {showUserMenu && (
+                    <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
+                      {/* User Info Header */}
+                      <div className="px-4 py-3 border-b border-gray-200 bg-gray-50 rounded-t-lg">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-8 h-8 bg-gradient-to-r from-[#073c82] to-[#00d6bc] rounded-full flex items-center justify-center">
+                            <span className="font-bold text-xs text-white">
+                              {`${userProfile.firstName?.[0] || ''}${userProfile.lastName?.[0] || ''}`.toUpperCase()}
+                            </span>
+                          </div>
+                          <div>
+                            <div className="font-medium text-sm text-gray-900">
+                              {userProfile.firstName} {userProfile.lastName}
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              {userProfile.email}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Menu Items */}
+                      <div className="py-1">
+                        <button
+                          onClick={() => {
+                            setShowUserMenu(false);
+                            router.push('/profile');
+                          }}
+                          className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 transition-colors"
+                        >
+                          <User className="w-4 h-4 mr-3 text-gray-500" />
+                          My Profile
+                        </button>
+
+                        <button
+                          onClick={() => {
+                            setShowUserMenu(false);
+                            router.push('/settings');
+                          }}
+                          className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 transition-colors"
+                        >
+                          <Settings className="w-4 h-4 mr-3 text-gray-500" />
+                          Settings
+                        </button>
+
+                        <button
+                          onClick={() => {
+                            setShowUserMenu(false);
+                            router.push('/help');
+                          }}
+                          className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 transition-colors"
+                        >
+                          <Shield className="w-4 h-4 mr-3 text-gray-500" />
+                          Help & Support
+                        </button>
+
+                        <div className="border-t border-gray-200 my-1"></div>
+
+                        <button
+                          onClick={() => {
+                            setShowUserMenu(false);
+                            handleLogout();
+                          }}
+                          className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 hover:text-red-700 transition-colors"
+                        >
+                          <LogOut className="w-4 h-4 mr-3 text-red-500" />
+                          Sign Out
+                        </button>
+                      </div>
                     </div>
-                    <div className="text-xs text-white/80 drop-shadow-sm">
-                      {userProfile.tenantName}
-                    </div>
-                  </div>
+                  )}
                 </div>
               )}
             </div>
