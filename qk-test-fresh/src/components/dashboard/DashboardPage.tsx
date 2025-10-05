@@ -782,7 +782,7 @@ export default function DashboardPage() {
                     <Settings className="w-5 h-5 text-blue-600" />
                   )}
                   <span className="text-sm text-gray-600">
-                    {isPlatformAdmin() ? 'Platform Admin' : 'Tenant Admin'}
+                    {isPlatformAdmin() ? 'Platform Features' : 'Tenant Admin'}
                   </span>
                 </div>
               </div>

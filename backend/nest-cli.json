@@ -1,9 +1,0 @@
-{
-  "_comment": "NestJS CLI configuration for BlickTrack backend API - Configures NestJS project structure, source root, and compiler options for the enterprise cybersecurity platform",
-  "$schema": "https://json.schemastore.org/nest-cli",
-  "collection": "@nestjs/schematics",
-  "sourceRoot": "src",
-  "compilerOptions": {
-    "deleteOutDir": true
-  }
-}

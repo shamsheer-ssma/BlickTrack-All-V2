@@ -37,6 +37,7 @@ import { apiService } from '@/lib/api';
 import Logo from '../ui/Logo';
 import BreadcrumbNavigation from '../ui/BreadcrumbNavigation';
 import Sidebar from './Sidebar';
+import UsersView from './UsersView';
 
 interface DashboardStats {
   // Platform Admin Stats
@@ -178,22 +179,20 @@ export default function UnifiedDashboard() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [currentView, setCurrentView] = useState<'dashboard' | 'users' | 'tenants' | 'system' | 'analytics'>('dashboard');
 
   useEffect(() => {
     loadDashboardData();
     
-    // Set up real-time updates
-    const interval = setInterval(() => {
-      refreshDashboardData();
-    }, 30000); // Refresh every 30 seconds
+    // Removed auto-refresh - users can manually refresh if needed
+    // This prevents annoying automatic refreshes every 30 seconds
 
-    // Set up mock notifications
+    // Set up mock notifications (keeping this for demo purposes)
     const notificationInterval = setInterval(() => {
       addMockNotification();
     }, 45000); // Add notification every 45 seconds
 
     return () => {
-      clearInterval(interval);
       clearInterval(notificationInterval);
     };
   }, []);
@@ -276,6 +275,31 @@ export default function UnifiedDashboard() {
     setSearchQuery('');
   };
 
+  const handleNavigation = (path: string) => {
+    // Handle different navigation paths
+    switch (path) {
+      case '/dashboard':
+        setCurrentView('dashboard');
+        break;
+      case '/users':
+        setCurrentView('users');
+        break;
+      case '/tenants':
+        setCurrentView('tenants');
+        break;
+      case '/system':
+        setCurrentView('system');
+        break;
+      case '/analytics':
+        setCurrentView('analytics');
+        break;
+      default:
+        // For other paths, use router navigation
+        router.push(path);
+        break;
+    }
+  };
+
   // Real-time refresh function
   const refreshDashboardData = useCallback(async () => {
     if (isRefreshing) return;
@@ -294,6 +318,7 @@ export default function UnifiedDashboard() {
 
   // Add mock notification
   const addMockNotification = () => {
+    // This is dummy data, need to fetch from DB
     const notificationTypes = [
       { type: 'success', message: 'New user registered', icon: 'Users' },
       { type: 'info', message: 'System backup completed', icon: 'Database' },
@@ -434,7 +459,7 @@ export default function UnifiedDashboard() {
       }
       
       setSystemHealth(healthData);
-      setUserProfile(profileData);
+      setUserProfile(profileData as UserProfile);
 
     } catch (err) {
       console.error('Error loading dashboard data:', err);
@@ -808,15 +833,31 @@ export default function UnifiedDashboard() {
               
               {/* User Profile Info */}
               {userProfile && (
-                <div className="flex items-center space-x-3 bg-white/10 rounded-lg px-3 py-2 border border-white/20">
-                  <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
-                    <Shield className="w-4 h-4 text-white" />
+                <div className="flex items-center space-x-3 bg-white/10 rounded-lg px-3 py-2 border border-white/20 backdrop-blur-sm">
+                  {/* User Initials Circle - Glass Morphism Effect */}
+                  <div className="relative w-8 h-8 rounded-full flex items-center justify-center overflow-hidden group">
+                    {/* Gradient Background */}
+                    <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-white/5 backdrop-blur-sm"></div>
+
+                    {/* Animated Gradient Border */}
+                    <div className="absolute inset-0 rounded-full p-[1px] bg-gradient-to-r from-[#073c82] via-[#00d6bc] to-[#073c82]">
+                      <div className="w-full h-full rounded-full bg-gradient-to-br from-white/15 to-white/5 backdrop-blur-sm flex items-center justify-center group-hover:from-white/25 group-hover:to-white/10 transition-all duration-300">
+                        {/* User Initials */}
+                        <span className="font-bold text-xs text-white drop-shadow-sm relative z-10">
+                          {`${userProfile.firstName?.[0] || ''}${userProfile.lastName?.[0] || ''}`.toUpperCase()}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Subtle Inner Glow */}
+                    <div className="absolute inset-1 rounded-full bg-gradient-to-br from-white/10 to-transparent opacity-50"></div>
                   </div>
+
                   <div className="text-left">
-                    <div className="text-white font-semibold text-xs">
+                    <div className="font-semibold text-xs text-white drop-shadow-sm">
                       {userProfile.firstName} {userProfile.lastName}
                     </div>
-                    <div className="text-white/70 text-xs">
+                    <div className="text-xs text-white/80 drop-shadow-sm">
                       {userProfile.tenantName}
                     </div>
                   </div>
@@ -835,10 +876,15 @@ export default function UnifiedDashboard() {
           transition: 'margin-left 0.3s ease-in-out'
         }}
       >
-        {/* 4-Column Grid - Key Metrics */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {/* Total Users */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        {/* Conditional Content Rendering */}
+        {currentView === 'users' ? (
+          <UsersView />
+        ) : currentView === 'dashboard' ? (
+          <>
+            {/* 4-Column Grid - Key Metrics */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+              {/* Total Users */}
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Total Users</p>
@@ -1201,10 +1247,10 @@ export default function UnifiedDashboard() {
             )}
           </div>
         </div>
-
+          </>
+        ) : null}
       </div>
-      
-      
+
       {/* Main Sidebar */}
       <div 
         className="absolute left-0 w-64 z-50 transition-all duration-300 rounded-r-xl flex flex-col"
@@ -1218,7 +1264,7 @@ export default function UnifiedDashboard() {
         }}
       >
         <div className="flex-1">
-          <Sidebar />
+          <Sidebar onNavigation={handleNavigation} />
         </div>
         
         {/* Status Indicator - At bottom of main sidebar */}
@@ -1240,12 +1286,12 @@ export default function UnifiedDashboard() {
             </button>
           </div>
         </div>
+
       </div>
 
       {/* Secondary Sidebar - Below main sidebar for next page */}
-      <div 
-        className="absolute left-0 w-64 z-40 transition-all duration-300 rounded-r-xl"
-        style={{ 
+      <div
+        style={{
           top: 'calc(100vh - 80px + 20px)', // Below the main sidebar with gap
           height: '200px', // Fixed height for secondary sidebar
           transform: sidebarOpen ? 'translateX(0)' : 'translateX(-100%)',

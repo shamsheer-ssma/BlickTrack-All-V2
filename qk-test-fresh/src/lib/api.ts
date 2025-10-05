@@ -31,6 +31,15 @@ export interface User {
   displayName: string;
   role: string;
   tenantId: string;
+  isVerified?: boolean;
+  mfaEnabled?: boolean;
+  lastLoginAt?: string;
+  createdAt?: string;
+  tenant?: {
+    id: string;
+    name: string;
+    slug: string;
+  };
 }
 
 export interface LoginRequest {
@@ -273,7 +282,7 @@ class ApiService {
         method: 'GET',
       });
       console.log('getRoleBasedActivity result:', result);
-      return result;
+      return result as ActivityItem[];
     } catch (error) {
       console.error('Error in getRoleBasedActivity:', error);
       return [];
@@ -289,7 +298,7 @@ class ApiService {
         method: 'GET',
       });
       console.log('getRoleBasedProjects result:', result);
-      return result;
+      return result as Project[];
     } catch (error) {
       console.error('Error in getRoleBasedProjects:', error);
       return [];
@@ -314,7 +323,7 @@ class ApiService {
         method: 'GET',
       });
       console.log('getRoleBasedNavigation result:', result);
-      return result;
+      return result as NavigationItem[];
     } catch (error) {
       console.error('Error in getRoleBasedNavigation:', error);
       return [];
@@ -330,7 +339,7 @@ class ApiService {
         method: 'GET',
       });
       console.log('getUserPermissions result:', result);
-      return result;
+      return result as UserPermission[];
     } catch (error) {
       console.error('Error in getUserPermissions:', error);
       // Return empty array as fallback
@@ -372,6 +381,23 @@ class ApiService {
    */
   async getUserProfile(): Promise<UserProfile> {
     return this.request('/dashboard/profile', {
+      method: 'GET',
+    });
+  }
+
+  /**
+   * Get users based on role
+   * Platform Admin: All users across all tenants
+   * Tenant Admin: Users from their tenant only
+   */
+  async getUsers(): Promise<{
+    users: User[];
+    total: number;
+    role: string;
+    description: string;
+  }> {
+    // This is dummy data, need to fetch from DB
+    return this.request('/dashboard/users', {
       method: 'GET',
     });
   }

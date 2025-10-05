@@ -59,7 +59,11 @@ const iconMap = {
   Wifi,
 };
 
-export default function Sidebar() {
+interface SidebarProps {
+  onNavigation?: (path: string) => void;
+}
+
+export default function Sidebar({ onNavigation }: SidebarProps) {
   const router = useRouter();
   const pathname = usePathname();
   const [navigation, setNavigation] = useState<NavigationItem[]>([]);
@@ -87,7 +91,11 @@ export default function Sidebar() {
   }, [loadNavigationData]);
 
   const handleNavigation = (path: string) => {
-    router.push(path);
+    if (onNavigation) {
+      onNavigation(path);
+    } else {
+      router.push(path);
+    }
   };
 
 

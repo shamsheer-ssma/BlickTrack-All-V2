@@ -1,5 +1,0 @@
-{
-  "_comment": "TypeScript build configuration for BlickTrack backend API - Extends base tsconfig.json and excludes test files, node_modules, and dist directory for production builds",
-  "extends": "./tsconfig.json",
-  "exclude": ["node_modules", "test", "dist", "**/*spec.ts"]
-}
