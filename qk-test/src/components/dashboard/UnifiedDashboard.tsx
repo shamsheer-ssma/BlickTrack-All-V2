@@ -11,7 +11,6 @@ import {
   BarChart, 
   Folder, 
   FileText, 
-  User, 
   Bell,
   Cog,
   Shield,
@@ -24,11 +23,15 @@ import {
   Mail,
   HardDrive,
   Cpu,
-  Wifi
+  Wifi,
+  Menu,
+  X
 } from 'lucide-react';
 import { apiService } from '@/lib/api';
 import { BLICKTRACK_THEME } from '@/lib/theme';
 import Logo from '../ui/Logo';
+import BreadcrumbNavigation from '../ui/BreadcrumbNavigation';
+import Sidebar from './Sidebar';
 
 interface DashboardStats {
   // Platform Admin Stats
@@ -87,7 +90,6 @@ const iconMap = {
   BarChart,
   Folder,
   FileText,
-  User,
   Bell,
   Cog,
   Shield,
@@ -116,6 +118,7 @@ export default function UnifiedDashboard() {
   const [systemHealth, setSystemHealth] = useState<any>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
   useEffect(() => {
     loadDashboardData();
@@ -188,6 +191,7 @@ export default function UnifiedDashboard() {
       default: return 'text-gray-600';
     }
   };
+
 
   const renderStatsCards = () => {
     const cards = [];
@@ -330,7 +334,7 @@ export default function UnifiedDashboard() {
   }
 
   return (
-    <div className="bg-gray-50">
+    <div className="min-h-screen bg-gray-50" style={{ minHeight: '100vh' }}>
       {/* Header - Full Width */}
       <div 
         className="text-white shadow-lg w-full"
@@ -339,14 +343,30 @@ export default function UnifiedDashboard() {
         }}
       >
         <div className="w-full px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-3">
+          {/* Top Row - Logo, Breadcrumb, and User Actions */}
+          <div className="flex justify-between items-center py-1">
             <div className="flex items-center space-x-4">
+              {/* Hamburger Menu Button */}
+              <button
+                onClick={() => setSidebarOpen(!sidebarOpen)}
+                className="text-white/90 hover:text-white hover:bg-white/10 p-2 rounded transition-all duration-200"
+                title={sidebarOpen ? "Hide sidebar" : "Show sidebar"}
+              >
+                <Menu className="w-5 h-5" />
+              </button>
+              
               <Logo 
                 size="sm" 
                 showTagline={false} 
                 className="cursor-pointer" 
                 variant="light"
                 onClick={() => router.push('/')}
+              />
+              
+              {/* Breadcrumb Navigation - Moved to same line */}
+              <BreadcrumbNavigation 
+                className="text-white/80 text-xs"
+                showHome={true}
               />
             </div>
 
@@ -368,11 +388,26 @@ export default function UnifiedDashboard() {
             </div>
 
             <div className="flex items-center space-x-4">
-              {/* User Profile Info - Compact */}
+              {/* Notifications - Next to user details */}
+              {permissions.canViewNotifications && (
+                <button
+                  onClick={() => router.push('/notifications')}
+                  className="flex items-center space-x-1 text-white/90 hover:text-white hover:bg-white/10 px-2 py-1 rounded transition-all duration-200"
+                >
+                  <Bell className="w-4 h-4" />
+                  {stats.notifications && stats.notifications > 0 && (
+                    <span className="bg-red-500 text-white text-xs rounded-full px-1.5 py-0.5 font-bold ml-1">
+                      {stats.notifications}
+                    </span>
+                  )}
+                </button>
+              )}
+              
+              {/* User Profile Info */}
               {userProfile && (
                 <div className="flex items-center space-x-3 bg-white/10 rounded-lg px-3 py-2 border border-white/20">
                   <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
-                    <User className="w-4 h-4 text-white" />
+                    <Shield className="w-4 h-4 text-white" />
                   </div>
                   <div className="text-left">
                     <div className="text-white font-semibold text-xs">
@@ -384,37 +419,19 @@ export default function UnifiedDashboard() {
                   </div>
                 </div>
               )}
-              
-              {/* Action Buttons - Compact */}
-              <div className="flex items-center space-x-2">
-                <button
-                  onClick={() => router.push('/profile')}
-                  className="flex items-center space-x-1 text-white/90 hover:text-white hover:bg-white/10 px-2 py-1 rounded transition-all duration-200"
-                >
-                  <User className="w-4 h-4" />
-                  <span className="text-xs font-medium">Profile</span>
-                </button>
-                {permissions.canViewNotifications && (
-                  <button
-                    onClick={() => router.push('/notifications')}
-                    className="flex items-center space-x-1 text-white/90 hover:text-white hover:bg-white/10 px-2 py-1 rounded transition-all duration-200"
-                  >
-                    <Bell className="w-4 h-4" />
-                    {stats.notifications && stats.notifications > 0 && (
-                      <span className="bg-red-500 text-white text-xs rounded-full px-1.5 py-0.5 font-bold ml-1">
-                        {stats.notifications}
-                      </span>
-                    )}
-                  </button>
-                )}
-              </div>
             </div>
           </div>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="px-4 sm:px-6 lg:px-8 py-8 ml-64">
+      <div 
+        className={`px-4 sm:px-6 lg:px-8 py-8 transition-all duration-300 ${sidebarOpen ? 'ml-64' : 'ml-0'}`}
+        style={{
+          marginLeft: sidebarOpen ? '16rem' : '0',
+          transition: 'margin-left 0.3s ease-in-out'
+        }}
+      >
           {/* Stats Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
           {renderStatsCards()}
@@ -424,6 +441,52 @@ export default function UnifiedDashboard() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
           {renderSystemHealth()}
           {renderNavigation()}
+        </div>
+
+        {/* Quick Actions */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+            <Shield className="w-5 h-5 mr-2" />
+            Quick Actions
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <button 
+              onClick={() => router.push('/threat-modeling/create')}
+              className="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors group"
+            >
+              <div className="p-2 bg-blue-50 rounded-lg group-hover:bg-blue-100 transition-colors">
+                <Shield className="w-6 h-6 text-blue-600" />
+              </div>
+              <div className="ml-4 text-left">
+                <p className="text-sm font-medium text-gray-900">Create Threat Model</p>
+                <p className="text-xs text-gray-500">Start a new security assessment</p>
+              </div>
+            </button>
+            <button 
+              onClick={() => router.push('/threat-modeling')}
+              className="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors group"
+            >
+              <div className="p-2 bg-green-50 rounded-lg group-hover:bg-green-100 transition-colors">
+                <FileText className="w-6 h-6 text-green-600" />
+              </div>
+              <div className="ml-4 text-left">
+                <p className="text-sm font-medium text-gray-900">View Threat Models</p>
+                <p className="text-xs text-gray-500">Manage existing models</p>
+              </div>
+            </button>
+            <button 
+              onClick={() => router.push('/projects')}
+              className="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors group"
+            >
+              <div className="p-2 bg-purple-50 rounded-lg group-hover:bg-purple-100 transition-colors">
+                <Folder className="w-6 h-6 text-purple-600" />
+              </div>
+              <div className="ml-4 text-left">
+                <p className="text-sm font-medium text-gray-900">View Projects</p>
+                <p className="text-xs text-gray-500">Manage security projects</p>
+              </div>
+            </button>
+          </div>
         </div>
 
         {/* Recent Activity */}
@@ -450,6 +513,51 @@ export default function UnifiedDashboard() {
             )}
           </div>
         </div>
+
+      </div>
+      
+      
+      {/* Main Sidebar */}
+      <div 
+        className="absolute left-0 w-64 z-50 transition-all duration-300 rounded-r-xl flex flex-col"
+        style={{ 
+          top: '80px', // Directly below header
+          height: 'calc(100vh - 80px)', // Full viewport height minus header
+          transform: sidebarOpen ? 'translateX(0)' : 'translateX(-100%)',
+          transition: 'transform 0.3s ease-in-out',
+          backgroundColor: 'white',
+          boxShadow: '2px 0 4px rgba(0,0,0,0.1)'
+        }}
+      >
+        <div className="flex-1">
+          <Sidebar />
+        </div>
+        
+        {/* Status Indicator - At bottom of main sidebar */}
+        <div className="bg-gray-50 p-3">
+          <div className="flex items-center justify-center">
+            <div className={`w-2 h-2 rounded-full mr-2 ${loading ? 'bg-yellow-500' : error ? 'bg-red-500' : 'bg-green-500'}`}></div>
+            <span className={`text-xs font-medium ${loading ? 'text-yellow-700' : error ? 'text-red-700' : 'text-green-700'}`}>
+              {loading ? 'Connecting...' : error ? 'System Offline' : 'System Online'}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Secondary Sidebar - Below main sidebar for next page */}
+      <div 
+        className="absolute left-0 w-64 z-40 transition-all duration-300 rounded-r-xl"
+        style={{ 
+          top: 'calc(100vh - 80px + 20px)', // Below the main sidebar with gap
+          height: '200px', // Fixed height for secondary sidebar
+          transform: sidebarOpen ? 'translateX(0)' : 'translateX(-100%)',
+          transition: 'transform 0.3s ease-in-out',
+          backgroundColor: '#f8fafc', // Light gray background for division
+          boxShadow: '2px 0 4px rgba(0,0,0,0.1)',
+          borderTop: '2px solid #e2e8f0' // Division line
+        }}
+      >
+        {/* Empty secondary sidebar - can be used for additional content later */}
       </div>
     </div>
   );

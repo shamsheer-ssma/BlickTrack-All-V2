@@ -5,9 +5,10 @@ import Sidebar from './Sidebar';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
+  sidebarOpen?: boolean;
 }
 
-export default function DashboardLayout({ children }: DashboardLayoutProps) {
+export default function DashboardLayout({ children, sidebarOpen = true }: DashboardLayoutProps) {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header - Full width at top */}
@@ -16,7 +17,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       </div>
       
       {/* Connection Box - Between header and sidebar */}
-      <div className="fixed left-0 top-20 w-64 h-8 z-20 bg-white border-b border-gray-200 flex items-center justify-center">
+      <div className="fixed left-0 top-18 w-64 h-8 z-20 bg-white border-b border-gray-200 flex items-center justify-center">
         <div className="text-blue-800 text-xs font-medium">
           {new Date().toLocaleDateString('en-US', { 
             weekday: 'long', 
@@ -31,7 +32,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       </div>
       
       {/* Sidebar - Below connection box */}
-      <div className="fixed left-0 top-24 h-screen w-64 z-10">
+      <div className={`fixed left-0 top-22 h-screen w-64 z-10 overflow-y-auto transition-all duration-300 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <Sidebar />
       </div>
     </div>

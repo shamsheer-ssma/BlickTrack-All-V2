@@ -11,7 +11,6 @@ import {
   BarChart, 
   Folder, 
   FileText, 
-  User, 
   Bell,
   Cog,
   Shield,
@@ -25,8 +24,7 @@ import {
   HardDrive,
   Cpu,
   Wifi,
-  Menu,
-  X
+  Menu
 } from 'lucide-react';
 import { apiService } from '@/lib/api';
 import Logo from '@/components/ui/Logo';
@@ -47,7 +45,6 @@ const iconMap = {
   BarChart,
   Folder,
   FileText,
-  User,
   Bell,
   Cog,
   Shield,
@@ -94,15 +91,10 @@ export default function Sidebar() {
     router.push(path);
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    router.push('/login');
-  };
 
   if (loading) {
     return (
-      <div className="w-64 bg-white shadow-lg h-screen flex items-center justify-center">
+      <div className="w-64 bg-white shadow-lg h-full flex items-center justify-center">
         <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
@@ -111,11 +103,11 @@ export default function Sidebar() {
   return (
     <>
       {/* Sidebar */}
-      <div className="w-64 bg-white shadow-xl h-screen border-r border-gray-200">
+      <div className="w-64 bg-white shadow-xl" style={{ minHeight: 'calc(100vh - 88px)' }}>
         <div className="flex flex-col h-full">
 
           {/* Navigation */}
-          <nav className="flex-1 px-4 py-4 space-y-2 overflow-y-auto">
+          <nav className="px-4 py-4 space-y-2 flex-1 overflow-y-auto">
             {navigation.map((item) => {
               const IconComponent = iconMap[item.icon as keyof typeof iconMap] || Home;
               const isActive = pathname === item.path;
@@ -125,10 +117,10 @@ export default function Sidebar() {
                   key={item.id}
                   onClick={() => handleNavigation(item.path)}
                   className={`
-                    w-full flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors
+                    w-full flex items-center px-3 py-3 text-sm font-medium rounded-lg transition-all duration-200
                     ${isActive 
-                      ? 'bg-blue-50 text-blue-700 border-r-2 border-blue-700' 
-                      : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                      ? 'bg-gradient-to-r from-blue-50 to-blue-100 text-blue-700 border-r-4 border-blue-500 shadow-sm' 
+                      : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900 hover:shadow-sm'
                     }
                   `}
                 >
@@ -139,23 +131,6 @@ export default function Sidebar() {
             })}
           </nav>
 
-          {/* Footer Actions */}
-          <div className="px-4 py-4 border-t border-gray-200 space-y-2">
-            <button
-              onClick={() => handleNavigation('/profile')}
-              className="w-full flex items-center px-3 py-2 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-50"
-            >
-              <User className="w-5 h-5 mr-3" />
-              Profile
-            </button>
-            <button
-              onClick={handleLogout}
-              className="w-full flex items-center px-3 py-2 text-sm font-medium text-red-600 rounded-lg hover:bg-red-50"
-            >
-              <X className="w-5 h-5 mr-3" />
-              Logout
-            </button>
-          </div>
         </div>
       </div>
     </>
