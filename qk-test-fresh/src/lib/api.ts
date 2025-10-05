@@ -26,9 +26,10 @@ const API_BASE_URL_ASSERTED = API_BASE_URL;
 export interface User {
   id: string;
   email: string;
-  firstName: string;
-  lastName: string;
-  displayName: string;
+  firstName?: string;
+  lastName?: string;
+  displayName?: string;
+  name?: string; // Fallback field for compatibility
   role: string;
   tenantId: string;
   isVerified?: boolean;
@@ -131,8 +132,19 @@ class ApiService {
    */
   private removeToken(): void {
     if (typeof window === 'undefined') return;
+    
+    // Clear authentication tokens and user data
     localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
     localStorage.removeItem('user');
+    localStorage.removeItem('token'); // Legacy token storage
+    
+    // Clear temporary verification data
+    localStorage.removeItem('pendingVerificationEmail');
+    localStorage.removeItem('pendingPasswordResetEmail');
+    localStorage.removeItem('pendingPasswordResetOtp');
+    
+    // Note: We keep 'theme' preference as it's not session-related
   }
 
   /**
@@ -144,9 +156,16 @@ class ApiService {
       body: JSON.stringify(credentials),
     });
 
-    // Store token
+    // Store tokens
     if (response.access_token) {
       this.setToken(response.access_token);
+    }
+    
+    // Store refresh token
+    if (response.refresh_token) {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('refresh_token', response.refresh_token);
+      }
     }
 
     // Decode token to get user info (basic JWT decode)
@@ -182,12 +201,19 @@ class ApiService {
    */
   async logout(): Promise<void> {
     try {
-      await this.request('/auth/logout', {
-        method: 'POST',
-      });
+      // Get refresh token from storage
+      const refreshToken = typeof window !== 'undefined' ? localStorage.getItem('refresh_token') : null;
+      
+      if (refreshToken) {
+        await this.request('/auth/logout', {
+          method: 'POST',
+          body: JSON.stringify({ refresh_token: refreshToken }),
+        });
+      }
     } catch (error) {
       console.warn('Logout API call failed:', error);
     } finally {
+      // Always clear tokens on client side
       this.removeToken();
     }
   }

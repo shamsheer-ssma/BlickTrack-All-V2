@@ -68,6 +68,8 @@ export default function UsersView() {
       setLoading(true);
       setError(null);
       const data = await apiService.getUsers();
+      console.log('Users loaded:', data);
+      console.log('First user data:', data.users?.[0]);
       setUsersData(data);
     } catch (err) {
       console.error('Error loading users:', err);
@@ -93,7 +95,7 @@ export default function UsersView() {
       setEditFormData({
         firstName: selectedUser.firstName || '',
         lastName: selectedUser.lastName || '',
-        displayName: selectedUser.displayName || '',
+        displayName: selectedUser.displayName || selectedUser.name || '',
         email: selectedUser.email || '',
         role: selectedUser.role || '',
         isVerified: selectedUser.isVerified || false,
@@ -104,8 +106,18 @@ export default function UsersView() {
   };
 
   const handleEditUserFromTable = (user: User) => {
+    console.log('Editing user data:', user);
     setSelectedUser(user);
     setEditFormData({
+      firstName: user.firstName || '',
+      lastName: user.lastName || '',
+      displayName: user.displayName || user.name || '',
+      email: user.email || '',
+      role: user.role || '',
+      isVerified: user.isVerified || false,
+      mfaEnabled: user.mfaEnabled || false
+    });
+    console.log('Edit form data set to:', {
       firstName: user.firstName || '',
       lastName: user.lastName || '',
       displayName: user.displayName || '',
@@ -197,7 +209,7 @@ export default function UsersView() {
       setEditFormData({
         firstName: selectedUser.firstName || '',
         lastName: selectedUser.lastName || '',
-        displayName: selectedUser.displayName || '',
+        displayName: selectedUser.displayName || selectedUser.name || '',
         email: selectedUser.email || '',
         role: selectedUser.role || '',
         isVerified: selectedUser.isVerified || false,
@@ -472,7 +484,10 @@ export default function UsersView() {
                         </div>
                         <div className="ml-3">
                           <div className="text-sm font-medium text-gray-900">
-                            {user.displayName || `${user.firstName} ${user.lastName}`.trim() || 'No Name'}
+                            {user.displayName || 
+                             (user.firstName && user.lastName ? `${user.firstName} ${user.lastName}`.trim() : '') ||
+                             user.name || 
+                             'No Name'}
                           </div>
                           <div className="text-xs text-gray-500 flex items-center">
                             <Mail className="w-3 h-3 mr-1" />
@@ -748,7 +763,10 @@ export default function UsersView() {
                       </div>
                       <div>
                         <h4 className="text-lg font-medium text-gray-900">
-                          {selectedUser.displayName || `${selectedUser.firstName} ${selectedUser.lastName}`.trim() || 'No Name'}
+                          {selectedUser.displayName || 
+                           (selectedUser.firstName && selectedUser.lastName ? `${selectedUser.firstName} ${selectedUser.lastName}`.trim() : '') ||
+                           selectedUser.name || 
+                           'No Name'}
                         </h4>
                         <p className="text-sm text-gray-500">{selectedUser.email}</p>
                         <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full mt-2 ${getRoleColor(selectedUser.role)}`}>

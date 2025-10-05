@@ -183,6 +183,7 @@ export default function UnifiedDashboard() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [userMenuTimeout, setUserMenuTimeout] = useState<NodeJS.Timeout | null>(null);
   const [currentView, setCurrentView] = useState<'dashboard' | 'users' | 'tenants' | 'system' | 'analytics'>('dashboard');
 
   useEffect(() => {
@@ -212,6 +213,10 @@ export default function UnifiedDashboard() {
         setShowNotifications(false);
       }
       if (!target.closest('.user-menu-container')) {
+        if (userMenuTimeout) {
+          clearTimeout(userMenuTimeout);
+          setUserMenuTimeout(null);
+        }
         setShowUserMenu(false);
       }
     };
@@ -221,6 +226,15 @@ export default function UnifiedDashboard() {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
+
+  // Cleanup user menu timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (userMenuTimeout) {
+        clearTimeout(userMenuTimeout);
+      }
+    };
+  }, [userMenuTimeout]);
 
   // Search functionality
   const handleSearch = useCallback(async (query: string) => {
@@ -326,12 +340,32 @@ export default function UnifiedDashboard() {
   // Logout function
   const handleLogout = async () => {
     try {
+      // Show loading state
+      setLoading(true);
+      
+      // Call logout API to revoke refresh token
       await apiService.logout();
+      
+      // Clear any local state
+      setUserProfile(null);
+      setPermissions({});
+      setActivity([]);
+      setProjects([]);
+      setNotifications([]);
+      
+      // Redirect to login
       router.push('/login');
     } catch (error) {
       console.error('Logout error:', error);
       // Force logout on client side even if API call fails
+      setUserProfile(null);
+      setPermissions({});
+      setActivity([]);
+      setProjects([]);
+      setNotifications([]);
       router.push('/login');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -852,12 +886,23 @@ export default function UnifiedDashboard() {
               
               {/* User Profile Info with Dropdown */}
               {userProfile && (
-                <div className="relative user-menu-container">
-                  <div
-                    className="flex items-center space-x-3 cursor-pointer group"
-                    onMouseEnter={() => setShowUserMenu(true)}
-                    onMouseLeave={() => setShowUserMenu(false)}
-                  >
+                <div
+                  className="relative user-menu-container"
+                  onMouseEnter={() => {
+                    if (userMenuTimeout) {
+                      clearTimeout(userMenuTimeout);
+                      setUserMenuTimeout(null);
+                    }
+                    setShowUserMenu(true);
+                  }}
+                  onMouseLeave={() => {
+                    const timeout = setTimeout(() => {
+                      setShowUserMenu(false);
+                    }, 300); // 300ms delay before closing
+                    setUserMenuTimeout(timeout);
+                  }}
+                >
+                  <div className="flex items-center space-x-3 cursor-pointer group">
                     {/* User Initials Circle - Glass Morphism Effect */}
                     <div className="relative w-8 h-8 rounded-full flex items-center justify-center overflow-hidden group">
                       {/* Gradient Background */}
@@ -954,10 +999,11 @@ export default function UnifiedDashboard() {
                             setShowUserMenu(false);
                             handleLogout();
                           }}
-                          className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 hover:text-red-700 transition-colors"
+                          disabled={loading}
+                          className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 hover:text-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                          <LogOut className="w-4 h-4 mr-3 text-red-500" />
-                          Sign Out
+                          <LogOut className={`w-4 h-4 mr-3 text-red-500 ${loading ? 'animate-spin' : ''}`} />
+                          {loading ? 'Signing Out...' : 'Sign Out'}
                         </button>
                       </div>
                     </div>
