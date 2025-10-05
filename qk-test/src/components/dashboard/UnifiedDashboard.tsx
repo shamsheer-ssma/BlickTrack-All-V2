@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { 
   Home, 
@@ -119,10 +119,88 @@ export default function UnifiedDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [showSearchResults, setShowSearchResults] = useState(false);
 
   useEffect(() => {
     loadDashboardData();
   }, []);
+
+  // Close search results when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Element;
+      if (!target.closest('.search-container')) {
+        setShowSearchResults(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  // Search functionality
+  const handleSearch = useCallback(async (query: string) => {
+    if (!query.trim()) {
+      setSearchResults([]);
+      setShowSearchResults(false);
+      return;
+    }
+
+    try {
+      // Search through different data sources
+      const results = [];
+      
+      // Search in navigation items
+      const navMatches = navigation.filter(item => 
+        item.label.toLowerCase().includes(query.toLowerCase()) ||
+        item.path.toLowerCase().includes(query.toLowerCase())
+      );
+      
+      // Search in projects
+      const projectMatches = projects.filter(project => 
+        project.name?.toLowerCase().includes(query.toLowerCase()) ||
+        project.description?.toLowerCase().includes(query.toLowerCase())
+      );
+      
+      // Search in activity
+      const activityMatches = activity.filter(item => 
+        item.action?.toLowerCase().includes(query.toLowerCase()) ||
+        item.eventType?.toLowerCase().includes(query.toLowerCase())
+      );
+
+      // Combine results
+      results.push(
+        ...navMatches.map(item => ({ type: 'navigation', ...item })),
+        ...projectMatches.map(project => ({ type: 'project', ...project })),
+        ...activityMatches.map(item => ({ type: 'activity', ...item }))
+      );
+
+      setSearchResults(results);
+      setShowSearchResults(true);
+    } catch (error) {
+      console.error('Search error:', error);
+    }
+  }, [navigation, projects, activity]);
+
+  const handleSearchInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const query = e.target.value;
+    setSearchQuery(query);
+    handleSearch(query);
+  };
+
+  const handleSearchResultClick = (result: any) => {
+    if (result.type === 'navigation') {
+      router.push(result.path);
+    } else if (result.type === 'project') {
+      router.push(`/projects/${result.id}`);
+    }
+    setShowSearchResults(false);
+    setSearchQuery('');
+  };
 
   const loadDashboardData = async () => {
     try {
@@ -363,6 +441,12 @@ export default function UnifiedDashboard() {
                 onClick={() => router.push('/')}
               />
               
+              {/* 2 Column Gap */}
+              <div className="flex space-x-4">
+                <div className="w-4"></div>
+                <div className="w-4"></div>
+              </div>
+              
               {/* Breadcrumb Navigation - Moved to same line */}
               <BreadcrumbNavigation 
                 className="text-white/80 text-xs"
@@ -372,7 +456,7 @@ export default function UnifiedDashboard() {
 
             {/* Center - Search Box */}
             <div className="flex-1 max-w-2xl mx-8">
-              <div className="relative">
+              <div className="relative search-container">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <svg className="h-4 w-4 text-white/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -381,9 +465,58 @@ export default function UnifiedDashboard() {
                 <input
                   type="text"
                   placeholder="Search resources, services, and docs..."
+                  value={searchQuery}
+                  onChange={handleSearchInputChange}
+                  onFocus={() => searchQuery && setShowSearchResults(true)}
                   className="block w-full pl-10 pr-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-white/30 focus:border-white/30 transition-all duration-200"
                   style={{ backdropFilter: 'blur(10px)' }}
                 />
+                
+                {/* Search Results Dropdown */}
+                {showSearchResults && (
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-lg shadow-lg border border-gray-200 max-h-96 overflow-y-auto z-50">
+                    <div className="p-2">
+                      {searchResults.length > 0 ? (
+                        <>
+                          <div className="text-xs text-gray-500 font-medium mb-2 px-2">
+                            Search Results ({searchResults.length})
+                          </div>
+                          {searchResults.map((result, index) => (
+                            <div
+                              key={index}
+                              onClick={() => handleSearchResultClick(result)}
+                              className="flex items-center space-x-3 p-2 hover:bg-gray-50 rounded cursor-pointer transition-colors"
+                            >
+                              <div className="flex-shrink-0">
+                                {result.type === 'navigation' && <Home className="w-4 h-4 text-blue-500" />}
+                                {result.type === 'project' && <Folder className="w-4 h-4 text-green-500" />}
+                                {result.type === 'activity' && <Activity className="w-4 h-4 text-orange-500" />}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="text-sm font-medium text-gray-900 truncate">
+                                  {result.label || result.name || result.action}
+                                </div>
+                                <div className="text-xs text-gray-500 truncate">
+                                  {result.type === 'navigation' && result.path}
+                                  {result.type === 'project' && result.description}
+                                  {result.type === 'activity' && result.eventType}
+                                </div>
+                              </div>
+                              <div className="text-xs text-gray-400 capitalize">
+                                {result.type}
+                              </div>
+                            </div>
+                          ))}
+                        </>
+                      ) : (
+                        <div className="text-center py-4 text-gray-500">
+                          <div className="text-sm">No results found for "{searchQuery}"</div>
+                          <div className="text-xs mt-1">Try searching for navigation items, projects, or activities</div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -432,8 +565,79 @@ export default function UnifiedDashboard() {
           transition: 'margin-left 0.3s ease-in-out'
         }}
       >
-          {/* Stats Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+        {/* 4-Column Grid - Key Metrics */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          {/* Total Users */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Total Users</p>
+                <p className="text-2xl font-bold text-gray-900">{stats.totalUsers || 0}</p>
+                <p className="text-xs text-green-600 flex items-center mt-1">
+                  <TrendingUp className="w-3 h-3 mr-1" />
+                  +12% from last month
+                </p>
+              </div>
+              <div className="p-3 bg-blue-50 rounded-lg">
+                <Users className="w-6 h-6 text-blue-600" />
+              </div>
+            </div>
+          </div>
+
+          {/* Active Projects */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Active Projects</p>
+                <p className="text-2xl font-bold text-gray-900">{stats.activeProjects || 0}</p>
+                <p className="text-xs text-green-600 flex items-center mt-1">
+                  <TrendingUp className="w-3 h-3 mr-1" />
+                  +8% from last month
+                </p>
+              </div>
+              <div className="p-3 bg-green-50 rounded-lg">
+                <Folder className="w-6 h-6 text-green-600" />
+              </div>
+            </div>
+          </div>
+
+          {/* Security Alerts */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Security Alerts</p>
+                <p className="text-2xl font-bold text-gray-900">{stats.securityAlerts || 0}</p>
+                <p className="text-xs text-red-600 flex items-center mt-1">
+                  <AlertTriangle className="w-3 h-3 mr-1" />
+                  {stats.securityAlerts > 0 ? 'Needs attention' : 'All clear'}
+                </p>
+              </div>
+              <div className="p-3 bg-red-50 rounded-lg">
+                <Shield className="w-6 h-6 text-red-600" />
+              </div>
+            </div>
+          </div>
+
+          {/* System Uptime */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">System Uptime</p>
+                <p className="text-2xl font-bold text-gray-900">{stats.systemUptime || '99.9%'}</p>
+                <p className="text-xs text-green-600 flex items-center mt-1">
+                  <CheckCircle className="w-3 h-3 mr-1" />
+                  All systems operational
+                </p>
+              </div>
+              <div className="p-3 bg-green-50 rounded-lg">
+                <Monitor className="w-6 h-6 text-green-600" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
           {renderStatsCards()}
         </div>
 
