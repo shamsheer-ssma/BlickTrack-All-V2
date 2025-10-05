@@ -25,7 +25,8 @@ import {
   Cpu,
   Wifi,
   Menu,
-  X
+  X,
+  RefreshCw
 } from 'lucide-react';
 import { apiService } from '@/lib/api';
 import { BLICKTRACK_THEME } from '@/lib/theme';
@@ -122,17 +123,39 @@ export default function UnifiedDashboard() {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [showSearchResults, setShowSearchResults] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [showNotifications, setShowNotifications] = useState(false);
 
   useEffect(() => {
     loadDashboardData();
+    
+    // Set up real-time updates
+    const interval = setInterval(() => {
+      refreshDashboardData();
+    }, 30000); // Refresh every 30 seconds
+
+    // Set up mock notifications
+    const notificationInterval = setInterval(() => {
+      addMockNotification();
+    }, 45000); // Add notification every 45 seconds
+
+    return () => {
+      clearInterval(interval);
+      clearInterval(notificationInterval);
+    };
   }, []);
 
-  // Close search results when clicking outside
+  // Close search results and notifications when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Element;
       if (!target.closest('.search-container')) {
         setShowSearchResults(false);
+      }
+      if (!target.closest('.notification-container')) {
+        setShowNotifications(false);
       }
     };
 
@@ -200,6 +223,58 @@ export default function UnifiedDashboard() {
     }
     setShowSearchResults(false);
     setSearchQuery('');
+  };
+
+  // Real-time refresh function
+  const refreshDashboardData = async () => {
+    if (isRefreshing) return;
+    
+    setIsRefreshing(true);
+    try {
+      await loadDashboardData();
+      setLastUpdated(new Date());
+    } catch (error) {
+      console.error('Error refreshing dashboard:', error);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
+  // Add mock notification
+  const addMockNotification = () => {
+    const notificationTypes = [
+      { type: 'success', message: 'New user registered', icon: 'Users' },
+      { type: 'info', message: 'System backup completed', icon: 'Database' },
+      { type: 'warning', message: 'High CPU usage detected', icon: 'Cpu' },
+      { type: 'error', message: 'Security alert triggered', icon: 'Shield' },
+      { type: 'info', message: 'Project status updated', icon: 'Folder' }
+    ];
+    
+    const randomNotification = notificationTypes[Math.floor(Math.random() * notificationTypes.length)];
+    const newNotification = {
+      id: Date.now(),
+      type: randomNotification.type,
+      message: randomNotification.message,
+      icon: randomNotification.icon,
+      timestamp: new Date(),
+      read: false
+    };
+    
+    setNotifications(prev => [newNotification, ...prev.slice(0, 9)]); // Keep only last 10
+  };
+
+  // Mark notification as read
+  const markNotificationAsRead = (id: number) => {
+    setNotifications(prev => 
+      prev.map(notif => 
+        notif.id === id ? { ...notif, read: true } : notif
+      )
+    );
+  };
+
+  // Clear all notifications
+  const clearAllNotifications = () => {
+    setNotifications([]);
   };
 
   const loadDashboardData = async () => {
@@ -523,18 +598,94 @@ export default function UnifiedDashboard() {
             <div className="flex items-center space-x-4">
               {/* Notifications - Next to user details */}
               {permissions.canViewNotifications && (
-                <button
-                  onClick={() => router.push('/notifications')}
-                  className="flex items-center space-x-1 text-white/90 hover:text-white hover:bg-white/10 px-2 py-1 rounded transition-all duration-200"
-                >
-                  <Bell className="w-4 h-4" />
-                  {stats.notifications && stats.notifications > 0 && (
-                    <span className="bg-red-500 text-white text-xs rounded-full px-1.5 py-0.5 font-bold ml-1">
-                      {stats.notifications}
-                    </span>
+                <div className="relative notification-container">
+                  <button
+                    onClick={() => setShowNotifications(!showNotifications)}
+                    className="flex items-center space-x-1 text-white/90 hover:text-white hover:bg-white/10 px-2 py-1 rounded transition-all duration-200"
+                  >
+                    <Bell className="w-4 h-4" />
+                    {notifications.filter(n => !n.read).length > 0 && (
+                      <span className="bg-red-500 text-white text-xs rounded-full px-1.5 py-0.5 font-bold ml-1">
+                        {notifications.filter(n => !n.read).length}
+                      </span>
+                    )}
+                  </button>
+                  
+                  {/* Notifications Dropdown */}
+                  {showNotifications && (
+                    <div className="absolute right-0 top-full mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
+                      <div className="p-4 border-b border-gray-200">
+                        <div className="flex items-center justify-between">
+                          <h3 className="text-lg font-semibold text-gray-900">Notifications</h3>
+                          <button
+                            onClick={clearAllNotifications}
+                            className="text-sm text-gray-500 hover:text-gray-700"
+                          >
+                            Clear All
+                          </button>
+                        </div>
+                      </div>
+                      <div className="max-h-96 overflow-y-auto">
+                        {notifications.length > 0 ? (
+                          notifications.map((notification) => {
+                            const IconComponent = iconMap[notification.icon as keyof typeof iconMap] || Bell;
+                            return (
+                              <div
+                                key={notification.id}
+                                onClick={() => markNotificationAsRead(notification.id)}
+                                className={`p-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors ${
+                                  !notification.read ? 'bg-blue-50' : ''
+                                }`}
+                              >
+                                <div className="flex items-start space-x-3">
+                                  <div className={`p-2 rounded-full ${
+                                    notification.type === 'success' ? 'bg-green-100' :
+                                    notification.type === 'error' ? 'bg-red-100' :
+                                    notification.type === 'warning' ? 'bg-yellow-100' :
+                                    'bg-blue-100'
+                                  }`}>
+                                    <IconComponent className={`w-4 h-4 ${
+                                      notification.type === 'success' ? 'text-green-600' :
+                                      notification.type === 'error' ? 'text-red-600' :
+                                      notification.type === 'warning' ? 'text-yellow-600' :
+                                      'text-blue-600'
+                                    }`} />
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-sm font-medium text-gray-900">
+                                      {notification.message}
+                                    </p>
+                                    <p className="text-xs text-gray-500">
+                                      {notification.timestamp.toLocaleTimeString()}
+                                    </p>
+                                  </div>
+                                  {!notification.read && (
+                                    <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })
+                        ) : (
+                          <div className="p-8 text-center text-gray-500">
+                            <Bell className="w-8 h-8 mx-auto mb-2 text-gray-300" />
+                            <p>No notifications</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   )}
-                </button>
+                </div>
               )}
+
+              {/* Live Status Indicator */}
+              <div className="flex items-center space-x-2 text-white/80 text-xs">
+                <div className={`w-2 h-2 rounded-full ${isRefreshing ? 'bg-yellow-400 animate-pulse' : 'bg-green-400'}`}></div>
+                <span>{isRefreshing ? 'Updating...' : 'Live'}</span>
+                <span className="text-white/60">
+                  Last updated: {lastUpdated.toLocaleTimeString()}
+                </span>
+              </div>
               
               {/* User Profile Info */}
               {userProfile && (
@@ -641,10 +792,224 @@ export default function UnifiedDashboard() {
           {renderStatsCards()}
         </div>
 
+        {/* Charts & Analytics Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          {/* User Activity Chart */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+              <TrendingUp className="w-5 h-5 mr-2" />
+              User Activity Trend
+            </h3>
+            <div className="space-y-4">
+              {/* Activity Bars */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-600">Today</span>
+                  <span className="text-sm font-medium text-gray-900">24 users</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div className="bg-gradient-to-r from-blue-500 to-blue-600 h-2 rounded-full" style={{width: '85%'}}></div>
+                </div>
+              </div>
+              
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-600">This Week</span>
+                  <span className="text-sm font-medium text-gray-900">156 users</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div className="bg-gradient-to-r from-green-500 to-green-600 h-2 rounded-full" style={{width: '92%'}}></div>
+                </div>
+              </div>
+              
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-600">This Month</span>
+                  <span className="text-sm font-medium text-gray-900">1,247 users</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div className="bg-gradient-to-r from-purple-500 to-purple-600 h-2 rounded-full" style={{width: '78%'}}></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* System Performance Chart */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+              <Monitor className="w-5 h-5 mr-2" />
+              System Performance
+            </h3>
+            <div className="space-y-6">
+              {/* CPU Usage */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-600">CPU Usage</span>
+                  <span className="text-sm font-medium text-gray-900">68%</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-3">
+                  <div className="bg-gradient-to-r from-yellow-400 to-orange-500 h-3 rounded-full" style={{width: '68%'}}></div>
+                </div>
+              </div>
+              
+              {/* Memory Usage */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-600">Memory Usage</span>
+                  <span className="text-sm font-medium text-gray-900">45%</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-3">
+                  <div className="bg-gradient-to-r from-blue-400 to-blue-500 h-3 rounded-full" style={{width: '45%'}}></div>
+                </div>
+              </div>
+              
+              {/* Disk Usage */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-600">Disk Usage</span>
+                  <span className="text-sm font-medium text-gray-900">32%</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-3">
+                  <div className="bg-gradient-to-r from-green-400 to-green-500 h-3 rounded-full" style={{width: '32%'}}></div>
+                </div>
+              </div>
+              
+              {/* Network Usage */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-600">Network</span>
+                  <span className="text-sm font-medium text-gray-900">12%</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-3">
+                  <div className="bg-gradient-to-r from-purple-400 to-purple-500 h-3 rounded-full" style={{width: '12%'}}></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* System Health & Navigation */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
           {renderSystemHealth()}
           {renderNavigation()}
+        </div>
+
+        {/* Security Alerts & Status */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+          {/* Security Alerts */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+              <AlertTriangle className="w-5 h-5 mr-2" />
+              Security Alerts
+            </h3>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between p-3 bg-red-50 rounded-lg border border-red-200">
+                <div className="flex items-center">
+                  <div className="w-2 h-2 bg-red-500 rounded-full mr-3"></div>
+                  <span className="text-sm font-medium text-red-800">High Priority</span>
+                </div>
+                <span className="text-xs text-red-600">3 alerts</span>
+              </div>
+              <div className="flex items-center justify-between p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+                <div className="flex items-center">
+                  <div className="w-2 h-2 bg-yellow-500 rounded-full mr-3"></div>
+                  <span className="text-sm font-medium text-yellow-800">Medium Priority</span>
+                </div>
+                <span className="text-xs text-yellow-600">7 alerts</span>
+              </div>
+              <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg border border-green-200">
+                <div className="flex items-center">
+                  <div className="w-2 h-2 bg-green-500 rounded-full mr-3"></div>
+                  <span className="text-sm font-medium text-green-800">Low Priority</span>
+                </div>
+                <span className="text-xs text-green-600">12 alerts</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Project Status */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+              <Folder className="w-5 h-5 mr-2" />
+              Project Status
+            </h3>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-600">In Progress</span>
+                <div className="flex items-center">
+                  <div className="w-16 bg-gray-200 rounded-full h-2 mr-2">
+                    <div className="bg-blue-500 h-2 rounded-full" style={{width: '75%'}}></div>
+                  </div>
+                  <span className="text-sm font-medium text-gray-900">8</span>
+                </div>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-600">Completed</span>
+                <div className="flex items-center">
+                  <div className="w-16 bg-gray-200 rounded-full h-2 mr-2">
+                    <div className="bg-green-500 h-2 rounded-full" style={{width: '100%'}}></div>
+                  </div>
+                  <span className="text-sm font-medium text-gray-900">15</span>
+                </div>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-600">On Hold</span>
+                <div className="flex items-center">
+                  <div className="w-16 bg-gray-200 rounded-full h-2 mr-2">
+                    <div className="bg-yellow-500 h-2 rounded-full" style={{width: '40%'}}></div>
+                  </div>
+                  <span className="text-sm font-medium text-gray-900">3</span>
+                </div>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-600">Overdue</span>
+                <div className="flex items-center">
+                  <div className="w-16 bg-gray-200 rounded-full h-2 mr-2">
+                    <div className="bg-red-500 h-2 rounded-full" style={{width: '60%'}}></div>
+                  </div>
+                  <span className="text-sm font-medium text-gray-900">2</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Recent Activity Chart */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+              <Activity className="w-5 h-5 mr-2" />
+              Activity Timeline
+            </h3>
+            <div className="space-y-3">
+              <div className="flex items-center space-x-3">
+                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                <div className="flex-1">
+                  <p className="text-xs text-gray-600">User login</p>
+                  <p className="text-xs text-gray-400">2 minutes ago</p>
+                </div>
+              </div>
+              <div className="flex items-center space-x-3">
+                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                <div className="flex-1">
+                  <p className="text-xs text-gray-600">Project created</p>
+                  <p className="text-xs text-gray-400">15 minutes ago</p>
+                </div>
+              </div>
+              <div className="flex items-center space-x-3">
+                <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                <div className="flex-1">
+                  <p className="text-xs text-gray-600">Security scan</p>
+                  <p className="text-xs text-gray-400">1 hour ago</p>
+                </div>
+              </div>
+              <div className="flex items-center space-x-3">
+                <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                <div className="flex-1">
+                  <p className="text-xs text-gray-600">Report generated</p>
+                  <p className="text-xs text-gray-400">2 hours ago</p>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Quick Actions */}
@@ -739,11 +1104,21 @@ export default function UnifiedDashboard() {
         
         {/* Status Indicator - At bottom of main sidebar */}
         <div className="bg-gray-50 p-3">
-          <div className="flex items-center justify-center">
-            <div className={`w-2 h-2 rounded-full mr-2 ${loading ? 'bg-yellow-500' : error ? 'bg-red-500' : 'bg-green-500'}`}></div>
-            <span className={`text-xs font-medium ${loading ? 'text-yellow-700' : error ? 'text-red-700' : 'text-green-700'}`}>
-              {loading ? 'Connecting...' : error ? 'System Offline' : 'System Online'}
-            </span>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
+              <div className={`w-2 h-2 rounded-full mr-2 ${isRefreshing ? 'bg-yellow-500 animate-pulse' : error ? 'bg-red-500' : 'bg-green-500'}`}></div>
+              <span className={`text-xs font-medium ${isRefreshing ? 'text-yellow-700' : error ? 'text-red-700' : 'text-green-700'}`}>
+                {isRefreshing ? 'Updating...' : error ? 'System Offline' : 'System Online'}
+              </span>
+            </div>
+            <button
+              onClick={refreshDashboardData}
+              disabled={isRefreshing}
+              className="text-xs text-gray-500 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              title="Refresh data"
+            >
+              <RefreshCw className={`w-3 h-3 ${isRefreshing ? 'animate-spin' : ''}`} />
+            </button>
           </div>
         </div>
       </div>
