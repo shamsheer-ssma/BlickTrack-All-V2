@@ -1,0 +1,10 @@
+{
+  "_comment": "Jest e2e configuration for BlickTrack backend API - Configures end-to-end testing environment with TypeScript support, test file patterns, and Node.js test environment for comprehensive integration testing",
+  "moduleFileExtensions": ["js", "json", "ts"],
+  "rootDir": ".",
+  "testEnvironment": "node",
+  "testRegex": ".e2e-spec.ts$",
+  "transform": {
+    "^.+\\.(t|j)s$": "ts-jest"
+  }
+}

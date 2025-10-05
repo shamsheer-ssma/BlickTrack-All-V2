@@ -1,0 +1,247 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+  --primary: #2563eb;
+  --primary-foreground: #ffffff;
+  --secondary: #f8fafc;
+  --secondary-foreground: #334155;
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
+  --accent: #f1f5f9;
+  --accent-foreground: #334155;
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+  --card: #ffffff;
+  --card-foreground: #171717;
+  --popover: #ffffff;
+  --popover-foreground: #171717;
+  --border: #e2e8f0;
+  --input: #e2e8f0;
+  --ring: #2563eb;
+  --radius: 0.75rem;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --radius: var(--radius);
+  --font-sans: 'Geometrica Sans', ui-sans-serif, system-ui, sans-serif;
+  --font-geometrica: 'Geometrica Sans', sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', 'Monaco', 'Cascadia Code', 'Segoe UI Mono', 'Roboto Mono', monospace;
+  --font-family-geometrica: 'Geometrica Sans', sans-serif;
+  --font-family-sans: 'Geometrica Sans', ui-sans-serif, system-ui, sans-serif;
+  --font-family: {
+    geometrica: 'Geometrica Sans', sans-serif;
+    sans: 'Geometrica Sans', ui-sans-serif, system-ui, sans-serif;
+  };
+  --color-blick-blue: #073c82;
+  --color-blick-teal: #00d6bc;
+  --color-primary-50: #eff6ff;
+  --color-primary-500: #3b82f6;
+  --color-primary-600: #2563eb;
+  --color-primary-700: #1d4ed8;
+  --color-primary-900: #073c82;
+  --color-accent-500: #00d6bc;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0f172a;
+    --foreground: #f8fafc;
+    --primary: #3b82f6;
+    --primary-foreground: #f8fafc;
+    --secondary: #1e293b;
+    --secondary-foreground: #f1f5f9;
+    --muted: #1e293b;
+    --muted-foreground: #94a3b8;
+    --accent: #1e293b;
+    --accent-foreground: #f1f5f9;
+    --destructive: #ef4444;
+    --destructive-foreground: #f8fafc;
+    --card: #1e293b;
+    --card-foreground: #f8fafc;
+    --popover: #1e293b;
+    --popover-foreground: #f8fafc;
+    --border: #334155;
+    --input: #334155;
+    --ring: #3b82f6;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  font-feature-settings: 'rlig' 1, 'calt' 1;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  line-height: 1.6;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--muted);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--muted-foreground);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--foreground);
+}
+
+/* Selection styling */
+::selection {
+  background-color: var(--primary);
+  color: var(--primary-foreground);
+}
+
+/* Focus visible improvements */
+.focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+/* Smooth animations */
+* {
+  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+}
+
+/* Custom animations for loading states */
+@keyframes shimmer {
+  0% {
+    background-position: -468px 0;
+  }
+  100% {
+    background-position: 468px 0;
+  }
+}
+
+.shimmer {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 1000px 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* Improved button styles */
+.btn-enterprise {
+  position: relative;
+  overflow: hidden;
+  transform: translateZ(0);
+}
+
+.btn-enterprise::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s;
+}
+
+.btn-enterprise:hover::before {
+  left: 100%;
+}
+
+/* Card hover effects */
+.card-hover {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.card-hover:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+/* BlickTrack Custom Gradients */
+.bg-gradient-blick {
+  background: linear-gradient(to right, #073c82, #00d6bc);
+}
+
+.bg-gradient-blick-hero {
+  background: linear-gradient(to bottom right, #073c82, #1e40af, #00d6bc);
+}
+
+.bg-gradient-blick-header {
+  background: linear-gradient(to right, #073c82, #00d6bc);
+}
+
+.text-blick-blue {
+  color: #073c82;
+}
+
+.text-blick-teal {
+  color: #00d6bc;
+}
+
+.border-blick-blue {
+  border-color: #073c82;
+}
+
+.border-blick-teal {
+  border-color: #00d6bc;
+}
+
+/* Header gradient bar */
+.bg-gradient-blick-header-bar {
+  background: linear-gradient(to right, #073c82, #00d6bc);
+  height: 4px;
+}
+
+/* Hero section gradient */
+.bg-gradient-blick-hero {
+  background: linear-gradient(to bottom right, #073c82, #1e40af, #00d6bc);
+}
+
+/* Footer gradient */
+.bg-gradient-blick-footer {
+  background: linear-gradient(to right, #073c82, #00d6bc);
+}
+
+/* Shadow utilities for BlickTrack colors */
+.shadow-blick-blue {
+  box-shadow: 0 4px 6px -1px rgba(7, 60, 130, 0.2), 0 2px 4px -1px rgba(7, 60, 130, 0.1);
+}
+
+.shadow-blick-teal {
+  box-shadow: 0 4px 6px -1px rgba(0, 214, 188, 0.2), 0 2px 4px -1px rgba(0, 214, 188, 0.1);
+}
