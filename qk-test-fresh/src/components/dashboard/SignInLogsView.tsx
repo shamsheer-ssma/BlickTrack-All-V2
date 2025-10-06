@@ -37,14 +37,11 @@
 
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
-  Shield, 
   Search, 
-  Filter, 
   Download, 
   RefreshCw, 
-  Calendar,
   Activity,
   AlertTriangle,
   CheckCircle,
@@ -86,7 +83,7 @@ export default function SignInLogsView() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalLogs, setTotalLogs] = useState(0);
-  const [pageSize, setPageSize] = useState(50);
+  const pageSize = 50;
   
   // Filters
   const [filters, setFilters] = useState({
@@ -101,7 +98,7 @@ export default function SignInLogsView() {
   });
 
   // Load sign-in logs
-  const loadSignInLogs = async () => {
+  const loadSignInLogs = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -128,7 +125,7 @@ export default function SignInLogsView() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentPage, pageSize, filters]);
 
   // Load sign-in statistics
   const loadSignInStats = async () => {
@@ -143,7 +140,7 @@ export default function SignInLogsView() {
   useEffect(() => {
     loadSignInLogs();
     loadSignInStats();
-  }, [currentPage, pageSize, filters]);
+  }, [loadSignInLogs]);
 
   const handleFilterChange = (key: string, value: string) => {
     setFilters(prev => ({ ...prev, [key]: value }));
@@ -240,30 +237,27 @@ export default function SignInLogsView() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 relative z-40">
-        <div className="px-6 py-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <Shield className="w-5 h-5 text-blue-600" />
-              <div>
-                <h1 className="text-lg font-semibold text-gray-900">Sign-in Logs</h1>
-                <p className="text-xs text-gray-500 mt-0.5">Authentication & Security</p>
-              </div>
-            </div>
-            <div className="flex items-center space-x-2">
-              <button
-                onClick={loadSignInLogs}
-                disabled={loading}
-                className="px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-all duration-200 shadow-sm disabled:opacity-50"
-              >
-                <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-                Refresh
-              </button>
-              <button className="px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-all duration-200 shadow-sm">
-                <Download className="w-4 h-4 mr-2" />
-                Export
-              </button>
-            </div>
+      <div className="mb-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Sign-in Logs</h1>
+            <p className="text-sm text-gray-600 mt-1">
+              Authentication & Security
+            </p>
+          </div>
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={loadSignInLogs}
+              disabled={loading}
+              className="px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-all duration-200 shadow-sm disabled:opacity-50"
+            >
+              <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+              Refresh
+            </button>
+            <button className="px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-all duration-200 shadow-sm">
+              <Download className="w-4 h-4 mr-2" />
+              Export
+            </button>
           </div>
         </div>
       </div>

@@ -254,7 +254,7 @@ export default React.memo(function UnifiedDashboard() {
   }, [router, setShowSearchResults, setSearchQuery]);
 
   const handleNavigation = useCallback((path: string) => {
-    // Handle different navigation paths
+    // Handle different navigation paths with smooth transitions
     switch (path) {
       case '/dashboard':
         setCurrentView('dashboard');
@@ -1014,18 +1014,27 @@ export default React.memo(function UnifiedDashboard() {
         role="main"
         aria-label="Main content"
       >
-        {/* Conditional Content Rendering */}
-        {currentView === 'users' ? (
-          <UsersView />
-        ) : currentView === 'tenants' ? (
-          <TenantsView />
-        ) : currentView === 'audit-logs' ? (
-          <AuditLogsView />
-        ) : currentView === 'sign-in-logs' ? (
-          <SignInLogsView />
-        ) : currentView === 'dashboard' ? (
-          <>
-            {/* 4-Column Grid - Key Metrics */}
+        {/* Conditional Content Rendering with Smooth Transitions */}
+        <div className="transition-all duration-300 ease-in-out">
+          {currentView === 'users' ? (
+            <div className="animate-fadeIn">
+              <UsersView />
+            </div>
+          ) : currentView === 'tenants' ? (
+            <div className="animate-fadeIn">
+              <TenantsView />
+            </div>
+          ) : currentView === 'audit-logs' ? (
+            <div className="animate-fadeIn">
+              <AuditLogsView />
+            </div>
+          ) : currentView === 'sign-in-logs' ? (
+            <div className="animate-fadeIn">
+              <SignInLogsView />
+            </div>
+          ) : currentView === 'dashboard' ? (
+            <div className="animate-fadeIn">
+              {/* 4-Column Grid - Key Metrics */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
               {/* Total Users */}
               <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
@@ -1391,8 +1400,9 @@ export default React.memo(function UnifiedDashboard() {
             )}
           </div>
         </div>
-        </>
-      ) : null}
+            </div>
+          ) : null}
+        </div>
       </main>
 
       {/* Main Sidebar */}

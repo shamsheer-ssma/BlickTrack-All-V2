@@ -18,7 +18,6 @@ import type {
   NavigationItem,
   UserProfile,
   TenantFeature as UITenantFeature,
-  SubFeature,
   TenantLicense,
   Feature,
   FeatureCategory

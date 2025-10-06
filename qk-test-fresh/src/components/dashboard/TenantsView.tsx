@@ -4,13 +4,10 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Building, 
   Search, 
-  Filter, 
   Plus, 
   Edit, 
   Trash2, 
-  Eye, 
   Shield, 
-  Key, 
   Users, 
   Calendar,
   Mail,
@@ -19,9 +16,6 @@ import {
   CheckCircle,
   XCircle,
   AlertTriangle,
-  Settings,
-  Lock,
-  Unlock,
   X
 } from 'lucide-react';
 import { apiService } from '@/lib/api';
@@ -73,28 +67,15 @@ interface TenantLicense {
   isActive: boolean;
 }
 
-interface FeatureCategory {
-  id: string;
-  name: string;
-  description: string;
-  features: Feature[];
-}
-
-interface Feature {
-  id: string;
-  name: string;
-  description: string;
-  subFeatures: SubFeature[];
-}
-
 export default function TenantsView() {
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [selectedTenant, setSelectedTenant] = useState<Tenant | null>(null);
   const [showRightPanel, setShowRightPanel] = useState(false);
-  const [showFeatureModal, setShowFeatureModal] = useState(false);
-  const [featureCategories, setFeatureCategories] = useState<FeatureCategory[]>([]);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [tenantToEdit, setTenantToEdit] = useState<Tenant | null>(null);
+  const [tenantToDelete, setTenantToDelete] = useState<Tenant | null>(null);
   
   // Search and filter states
   const [searchTerm, setSearchTerm] = useState('');
@@ -118,7 +99,6 @@ export default function TenantsView() {
   const loadTenants = useCallback(async () => {
     try {
       setLoading(true);
-      setError(null);
       
       // This would be a real API call
       const response = await apiService.getTenants({
@@ -133,7 +113,6 @@ export default function TenantsView() {
       setTotalTenants(response.total);
     } catch (err) {
       console.error('Error loading tenants:', err);
-      setError('Failed to load tenants');
       setTenants([]);
       setTotalTenants(0);
     } finally {
@@ -141,27 +120,50 @@ export default function TenantsView() {
     }
   }, [currentPage, pageSize, searchTerm, statusFilter, planFilter]);
 
-  // Load feature categories
-  const loadFeatureCategories = useCallback(async () => {
-    try {
-      // This would be a real API call
-      const response = await apiService.getFeatureCategories();
-      setFeatureCategories(response);
-    } catch (err) {
-      console.error('Error loading feature categories:', err);
-      setFeatureCategories([]);
-    }
-  }, []);
-
   useEffect(() => {
     loadTenants();
-    loadFeatureCategories();
-  }, [loadTenants, loadFeatureCategories]);
+  }, [loadTenants]);
 
   // Handle tenant selection
   const handleTenantSelect = (tenant: Tenant) => {
     setSelectedTenant(tenant);
     setShowRightPanel(true);
+  };
+
+  // Handle edit tenant
+  const handleEditTenant = (tenant: Tenant) => {
+    setTenantToEdit(tenant);
+    setShowEditModal(true);
+  };
+
+  // Handle delete tenant
+  const handleDeleteTenant = (tenant: Tenant) => {
+    setTenantToDelete(tenant);
+    setShowDeleteModal(true);
+  };
+
+  // Confirm delete tenant
+  const confirmDeleteTenant = async () => {
+    if (!tenantToDelete) return;
+    
+    try {
+      await apiService.deleteTenant(tenantToDelete.id);
+      
+      // Remove from local state
+      setTenants(prev => prev.filter(t => t.id !== tenantToDelete.id));
+      setTotalTenants(prev => prev - 1);
+      
+      // Close right panel if deleted tenant was selected
+      if (selectedTenant?.id === tenantToDelete.id) {
+        setShowRightPanel(false);
+        setSelectedTenant(null);
+      }
+      
+      setShowDeleteModal(false);
+      setTenantToDelete(null);
+    } catch (err) {
+      console.error('Error deleting tenant:', err);
+    }
   };
 
   // Handle feature access toggle
@@ -301,7 +303,7 @@ export default function TenantsView() {
   });
 
   return (
-    <div className="flex h-full bg-gray-50">
+    <div className="flex h-full bg-gray-50 relative">
       {/* Main Content */}
       <div className={`flex-1 transition-all duration-300 ${showRightPanel ? 'mr-80' : ''}`}>
         <div className="p-6">
@@ -550,27 +552,18 @@ export default function TenantsView() {
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
-                                handleTenantSelect(tenant);
+                                handleEditTenant(tenant);
                               }}
-                              className="text-blue-600 hover:text-blue-900 p-1 rounded hover:bg-blue-50"
-                            >
-                              <Eye className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                // Handle edit
-                              }}
-                              className="text-gray-600 hover:text-gray-900 p-1 rounded hover:bg-gray-50"
+                              className="text-blue-600 hover:text-blue-700 p-2 rounded-lg hover:bg-blue-50 transition-all duration-200 border border-transparent hover:border-blue-200"
                             >
                               <Edit className="w-4 h-4" />
                             </button>
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
-                                // Handle delete
+                                handleDeleteTenant(tenant);
                               }}
-                              className="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50"
+                              className="text-red-600 hover:text-red-700 p-2 rounded-lg hover:bg-red-50 transition-all duration-200 border border-transparent hover:border-red-200"
                             >
                               <Trash2 className="w-4 h-4" />
                             </button>
@@ -641,7 +634,7 @@ export default function TenantsView() {
 
       {/* Right Panel - Tenant Details */}
       {showRightPanel && selectedTenant && (
-        <div className="fixed right-0 top-0 w-80 h-full bg-white shadow-xl border-l border-gray-200 z-50 overflow-y-auto">
+        <div className="absolute right-0 top-0 w-80 h-full bg-white shadow-xl border-l border-gray-200 z-50 overflow-y-auto" style={{ top: '0px', height: '100vh' }}>
           <div className="p-6">
             {/* Header */}
             <div className="flex items-center justify-between mb-6">
@@ -731,7 +724,6 @@ export default function TenantsView() {
               <div className="flex items-center justify-between mb-3">
                 <h4 className="text-sm font-medium text-gray-700">Feature Access</h4>
                 <button
-                  onClick={() => setShowFeatureModal(true)}
                   className="text-xs text-blue-600 hover:text-blue-700"
                 >
                   Manage All
@@ -819,6 +811,126 @@ export default function TenantsView() {
               </button>
               <button className="w-full bg-gray-100 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-200 transition-colors text-sm">
                 View Analytics
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Tenant Modal */}
+      {showEditModal && tenantToEdit && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">Edit Tenant</h3>
+              <button
+                onClick={() => setShowEditModal(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                <input
+                  type="text"
+                  defaultValue={tenantToEdit.name}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                <input
+                  type="email"
+                  defaultValue={tenantToEdit.email}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Contact Person</label>
+                <input
+                  type="text"
+                  defaultValue={tenantToEdit.contactPerson}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                <select
+                  defaultValue={tenantToEdit.status}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                  <option value="suspended">Suspended</option>
+                </select>
+              </div>
+            </div>
+            
+            <div className="flex items-center justify-end space-x-3 mt-6">
+              <button
+                onClick={() => setShowEditModal(false)}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  // TODO: Implement update logic
+                  setShowEditModal(false);
+                }}
+                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Save Changes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Tenant Modal */}
+      {showDeleteModal && tenantToDelete && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">Delete Tenant</h3>
+              <button
+                onClick={() => setShowDeleteModal(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="mb-6">
+              <p className="text-sm text-gray-600 mb-4">
+                Are you sure you want to delete <strong>{tenantToDelete.name}</strong>? 
+                This action cannot be undone and will remove all associated data.
+              </p>
+              <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                <div className="flex items-center">
+                  <AlertTriangle className="w-5 h-5 text-red-600 mr-2" />
+                  <p className="text-sm text-red-800">
+                    This will permanently delete the tenant and all its data.
+                  </p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex items-center justify-end space-x-3">
+              <button
+                onClick={() => setShowDeleteModal(false)}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDeleteTenant}
+                className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
+              >
+                Delete Tenant
               </button>
             </div>
           </div>

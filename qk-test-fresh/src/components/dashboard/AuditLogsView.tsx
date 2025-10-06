@@ -38,7 +38,6 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { 
-  Shield, 
   Search, 
   Download, 
   RefreshCw, 
@@ -47,7 +46,6 @@ import {
   CheckCircle,
   XCircle,
   HelpCircle,
-  Clock,
   User,
   Server,
   Eye
@@ -272,30 +270,27 @@ export default function AuditLogsView() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 relative z-40">
-        <div className="px-6 py-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <Shield className="w-5 h-5 text-blue-600" />
-              <div>
-                <h1 className="text-lg font-semibold text-gray-900">Audit Logs</h1>
-                <p className="text-xs text-gray-500 mt-0.5">Security & Compliance</p>
-              </div>
-            </div>
-            <div className="flex items-center space-x-2">
-              <button
-                onClick={loadAuditLogs}
-                disabled={loading}
-                className="px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-all duration-200 shadow-sm disabled:opacity-50"
-              >
-                <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-                Refresh
-              </button>
-              <button className="px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-all duration-200 shadow-sm">
-                <Download className="w-4 h-4 mr-2" />
-                Export
-              </button>
-            </div>
+      <div className="mb-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Audit Logs</h1>
+            <p className="text-sm text-gray-600 mt-1">
+              Security & Compliance
+            </p>
+          </div>
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={loadAuditLogs}
+              disabled={loading}
+              className="px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-all duration-200 shadow-sm disabled:opacity-50"
+            >
+              <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+              Refresh
+            </button>
+            <button className="px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-all duration-200 shadow-sm">
+              <Download className="w-4 h-4 mr-2" />
+              Export
+            </button>
           </div>
         </div>
       </div>
