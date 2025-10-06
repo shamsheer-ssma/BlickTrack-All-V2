@@ -70,6 +70,23 @@ export default function UsersView() {
       const data = await apiService.getUsers();
       console.log('Users loaded:', data);
       console.log('First user data:', data.users?.[0]);
+      
+      // Debug: Check if user data has the required fields
+      if (data.users && data.users.length > 0) {
+        const firstUser = data.users[0];
+        console.log('First user detailed data:', {
+          id: firstUser.id,
+          email: firstUser.email,
+          firstName: firstUser.firstName,
+          lastName: firstUser.lastName,
+          displayName: firstUser.displayName,
+          name: firstUser.name,
+          role: firstUser.role,
+          isVerified: firstUser.isVerified,
+          mfaEnabled: firstUser.mfaEnabled
+        });
+      }
+      
       setUsersData(data);
     } catch (err) {
       console.error('Error loading users:', err);
@@ -92,40 +109,61 @@ export default function UsersView() {
 
   const handleEditUser = () => {
     if (selectedUser) {
-      setEditFormData({
-        firstName: selectedUser.firstName || '',
-        lastName: selectedUser.lastName || '',
-        displayName: selectedUser.displayName || selectedUser.name || '',
+      console.log('Editing user from right panel:', selectedUser);
+      console.log('Selected user firstName:', selectedUser.firstName);
+      console.log('Selected user lastName:', selectedUser.lastName);
+      console.log('Selected user displayName:', selectedUser.displayName);
+      console.log('Selected user name (fallback):', selectedUser.name);
+      
+      // Extract name from email if firstName/lastName are empty
+      const emailName = selectedUser.email.split('@')[0];
+      const emailParts = emailName.split('.');
+      const extractedFirstName = emailParts[0] || '';
+      const extractedLastName = emailParts.slice(1).join(' ') || '';
+      
+      const formData = {
+        firstName: selectedUser.firstName || extractedFirstName || '',
+        lastName: selectedUser.lastName || extractedLastName || '',
+        displayName: selectedUser.displayName || selectedUser.name || `${extractedFirstName} ${extractedLastName}`.trim() || emailName,
         email: selectedUser.email || '',
         role: selectedUser.role || '',
         isVerified: selectedUser.isVerified || false,
         mfaEnabled: selectedUser.mfaEnabled || false
-      });
+      };
+      
+      console.log('Edit form data set to:', formData);
+      setEditFormData(formData);
       setRightPanelMode('edit');
     }
   };
 
   const handleEditUserFromTable = (user: User) => {
     console.log('Editing user data:', user);
+    console.log('User firstName:', user.firstName);
+    console.log('User lastName:', user.lastName);
+    console.log('User displayName:', user.displayName);
+    console.log('User name (fallback):', user.name);
+    
     setSelectedUser(user);
-    setEditFormData({
-      firstName: user.firstName || '',
-      lastName: user.lastName || '',
-      displayName: user.displayName || user.name || '',
+    
+    // Extract name from email if firstName/lastName are empty
+    const emailName = user.email.split('@')[0];
+    const emailParts = emailName.split('.');
+    const extractedFirstName = emailParts[0] || '';
+    const extractedLastName = emailParts.slice(1).join(' ') || '';
+    
+    const formData = {
+      firstName: user.firstName || extractedFirstName || '',
+      lastName: user.lastName || extractedLastName || '',
+      displayName: user.displayName || user.name || `${extractedFirstName} ${extractedLastName}`.trim() || emailName,
       email: user.email || '',
       role: user.role || '',
       isVerified: user.isVerified || false,
       mfaEnabled: user.mfaEnabled || false
-    });
-    console.log('Edit form data set to:', {
-      firstName: user.firstName || '',
-      lastName: user.lastName || '',
-      displayName: user.displayName || '',
-      email: user.email || '',
-      role: user.role || '',
-      isVerified: user.isVerified || false,
-      mfaEnabled: user.mfaEnabled || false
-    });
+    };
+    
+    console.log('Edit form data set to:', formData);
+    setEditFormData(formData);
     setRightPanelMode('edit');
     setShowRightPanel(true);
   };
@@ -151,9 +189,9 @@ export default function UsersView() {
       setShowDeleteModal(false);
       setShowRightPanel(false);
       setSelectedUser(null);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error deleting user:', err);
-      setError(err.message || 'Failed to delete user. Please try again.');
+      setError(err instanceof Error ? err.message : 'Failed to delete user. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -194,9 +232,9 @@ export default function UsersView() {
       setRightPanelMode('view');
       // Update selectedUser with new data
       setSelectedUser(prev => prev ? { ...prev, ...editFormData } : null);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error updating user:', err);
-      setError(err.message || 'Failed to update user. Please try again.');
+      setError(err instanceof Error ? err.message : 'Failed to update user. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -381,91 +419,83 @@ export default function UsersView() {
         </div>
 
 
-        {/* Users Table - Azure style */}
-        <div className="bg-white rounded-lg shadow-sm">
-          <div className="overflow-x-auto">
+        {/* Users Table - Azure style with fixed height and table-specific scrolling */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200" style={{ height: 'calc(100vh - 400px)', minHeight: '500px' }}>
+          {/* Table Header - Fixed */}
+          <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
+            <div className={`grid gap-4 ${isPlatformAdmin() ? 'grid-cols-7' : 'grid-cols-6'}`}>
+              <div className="space-y-1">
+                <div className="text-xs font-medium text-gray-500 uppercase tracking-wider">User</div>
+                <input
+                  type="text"
+                  placeholder="Search users..."
+                  value={columnFilters.user}
+                  onChange={(e) => handleColumnFilterChange('user', e.target.value)}
+                  className="w-full px-2 py-1 text-xs border-0 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white"
+                />
+              </div>
+              <div className="space-y-1">
+                <div className="text-xs font-medium text-gray-500 uppercase tracking-wider">Role</div>
+                <input
+                  type="text"
+                  placeholder="Search roles..."
+                  value={columnFilters.role}
+                  onChange={(e) => handleColumnFilterChange('role', e.target.value)}
+                  className="w-full px-2 py-1 text-xs border-0 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white"
+                />
+              </div>
+              {isPlatformAdmin() && (
+                <div className="space-y-1">
+                  <div className="text-xs font-medium text-gray-500 uppercase tracking-wider">Tenant</div>
+                  <input
+                    type="text"
+                    placeholder="Search tenants..."
+                    value={columnFilters.tenant}
+                    onChange={(e) => handleColumnFilterChange('tenant', e.target.value)}
+                    className="w-full px-2 py-1 text-xs border-0 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white"
+                  />
+                </div>
+              )}
+              <div className="space-y-1">
+                <div className="text-xs font-medium text-gray-500 uppercase tracking-wider">Status</div>
+                <input
+                  type="text"
+                  placeholder="verified/unverified"
+                  value={columnFilters.status}
+                  onChange={(e) => handleColumnFilterChange('status', e.target.value)}
+                  className="w-full px-2 py-1 text-xs border-0 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white"
+                />
+              </div>
+              <div className="space-y-1">
+                <div className="text-xs font-medium text-gray-500 uppercase tracking-wider">Last Login</div>
+                <input
+                  type="text"
+                  placeholder="Search dates..."
+                  value={columnFilters.lastLogin}
+                  onChange={(e) => handleColumnFilterChange('lastLogin', e.target.value)}
+                  className="w-full px-2 py-1 text-xs border-0 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white"
+                />
+              </div>
+              <div className="space-y-1">
+                <div className="text-xs font-medium text-gray-500 uppercase tracking-wider">Created</div>
+                <input
+                  type="text"
+                  placeholder="Search dates..."
+                  value={columnFilters.created}
+                  onChange={(e) => handleColumnFilterChange('created', e.target.value)}
+                  className="w-full px-2 py-1 text-xs border-0 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white"
+                />
+              </div>
+              <div className="space-y-1">
+                <div className="text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</div>
+                <div className="h-6"></div>
+              </div>
+            </div>
+          </div>
+          
+          {/* Scrollable Table Body */}
+          <div className="overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 border-t border-gray-200" style={{ height: 'calc(100% - 80px)' }}>
             <table className="min-w-full">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    <div className="space-y-1">
-                      <div>User</div>
-                      <input
-                        type="text"
-                        placeholder="Search users..."
-                        value={columnFilters.user}
-                        onChange={(e) => handleColumnFilterChange('user', e.target.value)}
-                        className="w-full px-2 py-1 text-xs border-0 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white"
-                      />
-                    </div>
-                  </th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    <div className="space-y-1">
-                      <div>Role</div>
-                      <input
-                        type="text"
-                        placeholder="Search roles..."
-                        value={columnFilters.role}
-                        onChange={(e) => handleColumnFilterChange('role', e.target.value)}
-                        className="w-full px-2 py-1 text-xs border-0 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white"
-                      />
-                    </div>
-                  </th>
-                  {isPlatformAdmin() && (
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      <div className="space-y-1">
-                        <div>Tenant</div>
-                        <input
-                          type="text"
-                          placeholder="Search tenants..."
-                          value={columnFilters.tenant}
-                          onChange={(e) => handleColumnFilterChange('tenant', e.target.value)}
-                          className="w-full px-2 py-1 text-xs border-0 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white"
-                        />
-                      </div>
-                    </th>
-                  )}
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    <div className="space-y-1">
-                      <div>Status</div>
-                      <input
-                        type="text"
-                        placeholder="verified/unverified"
-                        value={columnFilters.status}
-                        onChange={(e) => handleColumnFilterChange('status', e.target.value)}
-                        className="w-full px-2 py-1 text-xs border-0 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white"
-                      />
-                    </div>
-                  </th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    <div className="space-y-1">
-                      <div>Last Login</div>
-                      <input
-                        type="text"
-                        placeholder="Search dates..."
-                        value={columnFilters.lastLogin}
-                        onChange={(e) => handleColumnFilterChange('lastLogin', e.target.value)}
-                        className="w-full px-2 py-1 text-xs border-0 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white"
-                      />
-                    </div>
-                  </th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    <div className="space-y-1">
-                      <div>Created</div>
-                      <input
-                        type="text"
-                        placeholder="Search dates..."
-                        value={columnFilters.created}
-                        onChange={(e) => handleColumnFilterChange('created', e.target.value)}
-                        className="w-full px-2 py-1 text-xs border-0 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white"
-                      />
-                    </div>
-                  </th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
               <tbody className="bg-white">
                 {filteredUsers.map((user) => (
                   <tr 
@@ -562,8 +592,10 @@ export default function UsersView() {
               </tbody>
             </table>
           </div>
-          
-          {/* Pagination - Azure style */}
+        </div>
+        
+        {/* Pagination - Azure style */}
+        <div className="bg-white rounded-lg shadow-sm mt-4">
           <div className="px-4 py-3 bg-gray-50">
             <div className="flex items-center justify-between">
               <div className="text-sm text-gray-700">

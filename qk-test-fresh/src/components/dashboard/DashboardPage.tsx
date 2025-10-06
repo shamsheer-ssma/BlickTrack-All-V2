@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { apiService } from '@/lib/api';
+import { apiService, User } from '@/lib/api';
 import { usePermissions } from '@/hooks/usePermissions';
 import FeatureCard from '@/components/ui/FeatureCard';
 // import { BLICKTRACK_THEME } from '@/lib/theme';
@@ -120,15 +120,7 @@ function StatCard({ title, value, change, changeType, icon, color = 'blue' }: St
 }
 
 export default function DashboardPage() {
-  const [user, setUser] = useState<{
-    id: string;
-    email: string;
-    firstName: string;
-    lastName: string;
-    displayName: string;
-    role: string;
-    tenantId: string;
-  } | null>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
