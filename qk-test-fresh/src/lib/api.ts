@@ -16,9 +16,14 @@ import type {
   Project,
   SystemHealth,
   NavigationItem,
-  UserProfile
-} from '@/components/dashboard/UnifiedDashboard';
-import type { UserPermission, Feature, TenantFeature } from '@/hooks/usePermissions';
+  UserProfile,
+  TenantFeature as UITenantFeature,
+  SubFeature,
+  TenantLicense,
+  Feature,
+  FeatureCategory
+} from '@/types/dashboard';
+import type { UserPermission, TenantFeature } from '@/hooks/usePermissions';
 
 // Use the API_BASE_URL directly since we now have a default value
 const API_BASE_URL_ASSERTED = API_BASE_URL;
@@ -58,6 +63,107 @@ export interface ApiError {
   message: string;
   error: string;
   statusCode: number;
+}
+
+export interface AuditLog {
+  id: string;
+  date: string;
+  service: string;
+  category: string;
+  activity: string;
+  status: string;
+  statusReason?: string;
+  targetType?: string;
+  targetId?: string;
+  targetName?: string;
+  actorType: string;
+  actorId?: string;
+  actorName?: string;
+  actorEmail?: string;
+  ipAddress?: string;
+  userAgent?: string;
+  requestId?: string;
+  details?: Record<string, unknown>;
+  changes?: Record<string, unknown>;
+  metadata?: Record<string, unknown>;
+  severity?: string; // Added for audit logs severity levels
+  riskLevel?: string; // Added for audit logs risk levels
+  user?: {
+    id: string;
+    email: string;
+    firstName?: string;
+    lastName?: string;
+    displayName?: string;
+  };
+  tenant?: {
+    id: string;
+    name: string;
+    slug: string;
+  };
+}
+
+export interface SignInLog {
+  id: string;
+  date: string;
+  service: string;
+  category: string;
+  activity: string;
+  status: string;
+  statusReason?: string;
+  userEmail: string;
+  userName?: string;
+  authMethod?: string;
+  mfaUsed: boolean;
+  mfaMethod?: string;
+  sessionId?: string;
+  sessionDuration?: number;
+  ipAddress?: string;
+  userAgent?: string;
+  location?: string;
+  deviceType?: string;
+  browser?: string;
+  os?: string;
+  riskLevel?: string;
+  riskFactors?: Record<string, unknown>;
+  isSuspicious: boolean;
+  details?: Record<string, unknown>;
+  metadata?: Record<string, unknown>;
+  user?: {
+    id: string;
+    email: string;
+    firstName?: string;
+    lastName?: string;
+    displayName?: string;
+  };
+  tenant?: {
+    id: string;
+    name: string;
+    slug: string;
+  };
+}
+
+export interface Tenant {
+  id: string;
+  name: string;
+  slug: string;
+  description?: string;
+  status: 'active' | 'inactive' | 'suspended';
+  plan: string;
+  domain?: string;
+  logo?: string;
+  contactPerson: string;
+  email: string;
+  phone?: string;
+  website?: string;
+  address?: string;
+  createdAt: string;
+  updatedAt: string;
+  features: UITenantFeature[];
+  userCount?: number;
+  licenseCount?: number;
+  totalUsers: number;
+  activeUsers: number;
+  licenses: TenantLicense[];
 }
 
 class ApiService {
@@ -451,6 +557,275 @@ class ApiService {
     message: string;
   }> {
     return this.request(`/dashboard/users/${userId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // ===============================================================
+  // AUDIT & COMPLIANCE METHODS
+  // ===============================================================
+
+  /**
+   * Get audit logs with filtering and pagination
+   */
+  async getAuditLogs(filters: {
+    page?: number;
+    limit?: number;
+    startDate?: string;
+    endDate?: string;
+    service?: string;
+    category?: string;
+    status?: string;
+    userId?: string;
+    targetType?: string;
+    search?: string;
+  } = {}): Promise<{
+    logs: AuditLog[];
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  }> {
+    const queryParams = new URLSearchParams();
+    
+    if (filters.page) queryParams.append('page', filters.page.toString());
+    if (filters.limit) queryParams.append('limit', filters.limit.toString());
+    if (filters.startDate) queryParams.append('startDate', filters.startDate);
+    if (filters.endDate) queryParams.append('endDate', filters.endDate);
+    if (filters.service) queryParams.append('service', filters.service);
+    if (filters.category) queryParams.append('category', filters.category);
+    if (filters.status) queryParams.append('status', filters.status);
+    if (filters.userId) queryParams.append('userId', filters.userId);
+    if (filters.targetType) queryParams.append('targetType', filters.targetType);
+    if (filters.search) queryParams.append('search', filters.search);
+
+    const queryString = queryParams.toString();
+    const url = `/audit/logs${queryString ? `?${queryString}` : ''}`;
+    
+    return this.request(url, {
+      method: 'GET',
+    });
+  }
+
+  /**
+   * Get sign-in logs with filtering and pagination
+   */
+  async getSignInLogs(filters: {
+    page?: number;
+    limit?: number;
+    startDate?: string;
+    endDate?: string;
+    status?: string;
+    userId?: string;
+    userEmail?: string;
+    ipAddress?: string;
+    isSuspicious?: boolean;
+    search?: string;
+  } = {}): Promise<{
+    logs: SignInLog[];
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  }> {
+    const queryParams = new URLSearchParams();
+    
+    if (filters.page) queryParams.append('page', filters.page.toString());
+    if (filters.limit) queryParams.append('limit', filters.limit.toString());
+    if (filters.startDate) queryParams.append('startDate', filters.startDate);
+    if (filters.endDate) queryParams.append('endDate', filters.endDate);
+    if (filters.status) queryParams.append('status', filters.status);
+    if (filters.userId) queryParams.append('userId', filters.userId);
+    if (filters.userEmail) queryParams.append('userEmail', filters.userEmail);
+    if (filters.ipAddress) queryParams.append('ipAddress', filters.ipAddress);
+    if (filters.isSuspicious !== undefined) queryParams.append('isSuspicious', filters.isSuspicious.toString());
+    if (filters.search) queryParams.append('search', filters.search);
+
+    const queryString = queryParams.toString();
+    const url = `/audit/sign-in-logs${queryString ? `?${queryString}` : ''}`;
+    
+    return this.request(url, {
+      method: 'GET',
+    });
+  }
+
+  /**
+   * Get audit statistics and analytics
+   */
+  async getAuditStats(days: number = 30): Promise<{
+    totalLogs: number;
+    successCount: number;
+    failureCount: number;
+    warningCount: number;
+    topServices: Array<{ service: string; count: number }>;
+    topCategories: Array<{ category: string; count: number }>;
+    dailyActivity: Array<{ date: string; count: number }>;
+    hourlyActivity: Array<{ hour: number; count: number }>;
+  }> {
+    return this.request(`/audit/stats?days=${days}`, {
+      method: 'GET',
+    });
+  }
+
+  /**
+   * Get sign-in statistics and analytics
+   */
+  async getSignInStats(days: number = 30): Promise<{
+    totalSignIns: number;
+    successCount: number;
+    failureCount: number;
+    blockedCount: number;
+    mfaUsage: number;
+    topUsers: Array<{ userEmail: string; count: number }>;
+    topIPs: Array<{ ipAddress: string; count: number }>;
+    dailySignIns: Array<{ date: string; count: number }>;
+    hourlySignIns: Array<{ hour: number; count: number }>;
+    suspiciousActivity: number;
+  }> {
+    return this.request(`/audit/sign-in-stats?days=${days}`, {
+      method: 'GET',
+    });
+  }
+
+  // ===============================================================
+  // TENANT MANAGEMENT METHODS
+  // ===============================================================
+
+  /**
+   * Get all tenants with filtering and pagination
+   */
+  async getTenants(filters: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    status?: string;
+    plan?: string;
+  } = {}): Promise<{
+    tenants: Tenant[];
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  }> {
+    const queryParams = new URLSearchParams();
+    
+    if (filters.page) queryParams.append('page', filters.page.toString());
+    if (filters.limit) queryParams.append('limit', filters.limit.toString());
+    if (filters.search) queryParams.append('search', filters.search);
+    if (filters.status) queryParams.append('status', filters.status);
+    if (filters.plan) queryParams.append('plan', filters.plan);
+
+    const queryString = queryParams.toString();
+    const url = `/tenants${queryString ? `?${queryString}` : ''}`;
+    
+    return this.request(url, {
+      method: 'GET',
+    });
+  }
+
+  /**
+   * Get feature categories and features
+   */
+  async getFeatureCategories(): Promise<FeatureCategory[]> {
+    return this.request('/tenants/feature-categories', {
+      method: 'GET',
+    });
+  }
+
+  /**
+   * Update tenant feature access
+   */
+  async updateTenantFeature(tenantId: string, featureId: string, data: {
+    isEnabled: boolean;
+  }): Promise<{
+    success: boolean;
+    message: string;
+  }> {
+    return this.request(`/tenants/${tenantId}/features/${featureId}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  /**
+   * Update tenant sub-feature access
+   */
+  async updateTenantSubFeature(tenantId: string, featureId: string, subFeatureId: string, data: {
+    isEnabled: boolean;
+  }): Promise<{
+    success: boolean;
+    message: string;
+  }> {
+    return this.request(`/tenants/${tenantId}/features/${featureId}/sub-features/${subFeatureId}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  /**
+   * Get tenant details with features and licenses
+   */
+  async getTenantDetails(tenantId: string): Promise<Tenant> {
+    return this.request(`/tenants/${tenantId}`, {
+      method: 'GET',
+    });
+  }
+
+  /**
+   * Create new tenant
+   */
+  async createTenant(data: {
+    name: string;
+    slug: string;
+    email: string;
+    phone?: string;
+    website?: string;
+    address?: string;
+    contactPerson: string;
+    plan: string;
+  }): Promise<{
+    success: boolean;
+    message: string;
+    tenant: Tenant;
+  }> {
+    return this.request('/tenants', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  /**
+   * Update tenant information
+   */
+  async updateTenant(tenantId: string, data: {
+    name?: string;
+    slug?: string;
+    email?: string;
+    phone?: string;
+    website?: string;
+    address?: string;
+    contactPerson?: string;
+    plan?: string;
+    status?: string;
+  }): Promise<{
+    success: boolean;
+    message: string;
+    tenant: Tenant;
+  }> {
+    return this.request(`/tenants/${tenantId}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  /**
+   * Delete tenant
+   */
+  async deleteTenant(tenantId: string): Promise<{
+    success: boolean;
+    message: string;
+  }> {
+    return this.request(`/tenants/${tenantId}`, {
       method: 'DELETE',
     });
   }

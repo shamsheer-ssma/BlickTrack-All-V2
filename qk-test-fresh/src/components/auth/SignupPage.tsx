@@ -152,13 +152,17 @@ export default function SignupPage() {
             {/* Name Fields */}
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label 
+                  htmlFor="firstName"
+                  className="block text-sm font-medium text-gray-700 mb-2"
+                >
                   First Name
                 </label>
                 <div className="relative">
-                  <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" aria-hidden="true" />
                   <input
                     type="text"
+                    id="firstName"
                     name="firstName"
                     value={formData.firstName}
                     onChange={handleInputChange}
@@ -166,21 +170,34 @@ export default function SignupPage() {
                       errors.firstName ? 'border-red-500' : 'border-gray-300 hover:border-gray-400'
                     }`}
                     placeholder="John"
+                    aria-describedby={errors.firstName ? "firstName-error" : undefined}
+                    aria-invalid={!!errors.firstName}
+                    required
                   />
                 </div>
                 {errors.firstName && (
-                  <p className="text-red-500 text-sm mt-1">{errors.firstName}</p>
+                  <p 
+                    id="firstName-error"
+                    className="text-red-500 text-sm mt-1" 
+                    role="alert"
+                  >
+                    {errors.firstName}
+                  </p>
                 )}
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label 
+                  htmlFor="lastName"
+                  className="block text-sm font-medium text-gray-700 mb-2"
+                >
                   Last Name
                 </label>
                 <div className="relative">
-                  <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" aria-hidden="true" />
                   <input
                     type="text"
+                    id="lastName"
                     name="lastName"
                     value={formData.lastName}
                     onChange={handleInputChange}
@@ -188,23 +205,36 @@ export default function SignupPage() {
                       errors.lastName ? 'border-red-500' : 'border-gray-300 hover:border-gray-400'
                     }`}
                     placeholder="Doe"
+                    aria-describedby={errors.lastName ? "lastName-error" : undefined}
+                    aria-invalid={!!errors.lastName}
+                    required
                   />
                 </div>
                 {errors.lastName && (
-                  <p className="text-red-500 text-sm mt-1">{errors.lastName}</p>
+                  <p 
+                    id="lastName-error"
+                    className="text-red-500 text-sm mt-1" 
+                    role="alert"
+                  >
+                    {errors.lastName}
+                  </p>
                 )}
               </div>
             </div>
 
             {/* Email Field */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label 
+                htmlFor="email"
+                className="block text-sm font-medium text-gray-700 mb-2"
+              >
                 Email Address
               </label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" aria-hidden="true" />
                 <input
                   type="email"
+                  id="email"
                   name="email"
                   value={formData.email}
                   onChange={handleInputChange}
@@ -212,22 +242,35 @@ export default function SignupPage() {
                     errors.email ? 'border-red-500' : 'border-gray-300 hover:border-gray-400'
                   }`}
                   placeholder="john@company.com"
+                  aria-describedby={errors.email ? "email-error" : undefined}
+                  aria-invalid={!!errors.email}
+                  required
                 />
               </div>
               {errors.email && (
-                <p className="text-red-500 text-sm mt-1">{errors.email}</p>
+                <p 
+                  id="email-error"
+                  className="text-red-500 text-sm mt-1" 
+                  role="alert"
+                >
+                  {errors.email}
+                </p>
               )}
             </div>
 
             {/* Password Field */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label 
+                htmlFor="password"
+                className="block text-sm font-medium text-gray-700 mb-2"
+              >
                 Password
               </label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" aria-hidden="true" />
                 <input
                   type={showPassword ? 'text' : 'password'}
+                  id="password"
                   name="password"
                   value={formData.password}
                   onChange={handleInputChange}
@@ -235,29 +278,47 @@ export default function SignupPage() {
                     errors.password ? 'border-red-500' : 'border-gray-300 hover:border-gray-400'
                   }`}
                   placeholder="At least 8 characters"
+                  aria-describedby={errors.password ? "password-error" : "password-help"}
+                  aria-invalid={!!errors.password}
+                  required
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors focus:outline-none focus:ring-2 focus:ring-[#073c82] focus:ring-offset-1 rounded"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  aria-pressed={showPassword}
                 >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  {showPassword ? <EyeOff className="w-4 h-4" aria-hidden="true" /> : <Eye className="w-4 h-4" aria-hidden="true" />}
                 </button>
               </div>
+              <p id="password-help" className="text-xs text-gray-500 mt-1">
+                Password must be at least 8 characters long
+              </p>
               {errors.password && (
-                <p className="text-red-500 text-sm mt-1">{errors.password}</p>
+                <p 
+                  id="password-error"
+                  className="text-red-500 text-sm mt-1" 
+                  role="alert"
+                >
+                  {errors.password}
+                </p>
               )}
             </div>
 
             {/* Confirm Password Field */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label 
+                htmlFor="confirmPassword"
+                className="block text-sm font-medium text-gray-700 mb-2"
+              >
                 Confirm Password
               </label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" aria-hidden="true" />
                 <input
                   type={showConfirmPassword ? 'text' : 'password'}
+                  id="confirmPassword"
                   name="confirmPassword"
                   value={formData.confirmPassword}
                   onChange={handleInputChange}
@@ -265,17 +326,28 @@ export default function SignupPage() {
                     errors.confirmPassword ? 'border-red-500' : 'border-gray-300 hover:border-gray-400'
                   }`}
                   placeholder="Confirm your password"
+                  aria-describedby={errors.confirmPassword ? "confirmPassword-error" : undefined}
+                  aria-invalid={!!errors.confirmPassword}
+                  required
                 />
                 <button
                   type="button"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors focus:outline-none focus:ring-2 focus:ring-[#073c82] focus:ring-offset-1 rounded"
+                  aria-label={showConfirmPassword ? "Hide confirm password" : "Show confirm password"}
+                  aria-pressed={showConfirmPassword}
                 >
-                  {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  {showConfirmPassword ? <EyeOff className="w-4 h-4" aria-hidden="true" /> : <Eye className="w-4 h-4" aria-hidden="true" />}
                 </button>
               </div>
               {errors.confirmPassword && (
-                <p className="text-red-500 text-sm mt-1">{errors.confirmPassword}</p>
+                <p 
+                  id="confirmPassword-error"
+                  className="text-red-500 text-sm mt-1" 
+                  role="alert"
+                >
+                  {errors.confirmPassword}
+                </p>
               )}
             </div>
 
@@ -284,24 +356,41 @@ export default function SignupPage() {
               <label className="flex items-start">
                 <input
                   type="checkbox"
+                  id="agreeToTerms"
                   name="agreeToTerms"
                   checked={formData.agreeToTerms}
                   onChange={handleInputChange}
-                  className="mt-1 rounded border-gray-300 text-[#073c82] focus:ring-[#073c82]"
+                  className="mt-1 rounded border-gray-300 text-[#073c82] focus:ring-[#073c82] focus:ring-2 focus:ring-offset-1"
+                  aria-describedby={errors.agreeToTerms ? "terms-error" : "terms-description"}
+                  required
                 />
-                <span className="ml-2 text-sm text-gray-600">
+                <span id="terms-description" className="ml-2 text-sm text-gray-600">
                   I agree to the{' '}
-                  <a href="#" className="text-[#073c82] hover:text-[#00d6bc] font-medium">
+                  <a 
+                    href="#" 
+                    className="text-[#073c82] hover:text-[#00d6bc] font-medium focus:outline-none focus:ring-2 focus:ring-[#073c82] focus:ring-offset-1 rounded"
+                    onClick={(e) => e.preventDefault()}
+                  >
                     Terms of Service
                   </a>{' '}
                   and{' '}
-                  <a href="#" className="text-[#073c82] hover:text-[#00d6bc] font-medium">
+                  <a 
+                    href="#" 
+                    className="text-[#073c82] hover:text-[#00d6bc] font-medium focus:outline-none focus:ring-2 focus:ring-[#073c82] focus:ring-offset-1 rounded"
+                    onClick={(e) => e.preventDefault()}
+                  >
                     Privacy Policy
                   </a>
                 </span>
               </label>
               {errors.agreeToTerms && (
-                <p className="text-red-500 text-sm mt-1">{errors.agreeToTerms}</p>
+                <p 
+                  id="terms-error"
+                  className="text-red-500 text-sm mt-1" 
+                  role="alert"
+                >
+                  {errors.agreeToTerms}
+                </p>
               )}
             </div>
 
@@ -309,13 +398,21 @@ export default function SignupPage() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full py-3 px-4 rounded-xl font-medium text-white transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full py-3 px-4 rounded-xl font-medium text-white transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#073c82] disabled:focus:ring-0"
               style={{
                 background: 'linear-gradient(90deg, #073c82 0%, #00d6bc 100%)',
                 boxShadow: '0 4px 6px -1px rgba(7, 60, 130, 0.2)'
               }}
+              aria-describedby={isLoading ? "loading-status" : undefined}
             >
-              {isLoading ? 'Creating Account...' : 'Create Account'}
+              {isLoading ? (
+                <>
+                  <span aria-hidden="true">Creating Account...</span>
+                  <span id="loading-status" className="sr-only">Creating your account, please wait</span>
+                </>
+              ) : (
+                'Create Account'
+              )}
             </button>
           </form>
 

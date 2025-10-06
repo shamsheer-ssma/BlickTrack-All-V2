@@ -1,21 +1,17 @@
 
 'use client';
-interface ActivityUser {
-  firstName?: string;
-  lastName?: string;
-}
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { 
-  Home, 
-  Users, 
-  Building, 
-  Settings, 
-  Monitor, 
-  BarChart, 
-  Folder, 
-  FileText, 
+import {
+  Home,
+  Users,
+  Building,
+  Settings,
+  Monitor,
+  BarChart,
+  Folder,
+  FileText,
   Bell,
   Cog,
   Shield,
@@ -41,54 +37,13 @@ import Logo from '../ui/Logo';
 import BreadcrumbNavigation from '../ui/BreadcrumbNavigation';
 import Sidebar from './Sidebar';
 import UsersView from './UsersView';
-
-interface DashboardStats {
-  // Platform Admin Stats
-  totalTenants?: number;
-  totalUsers?: number;
-  activeUsers?: number;
-  totalProjects?: number;
-  activeProjects?: number;
-  completedProjects?: number;
-  overdueProjects?: number;
-  securityAlerts?: number;
-  systemUptime?: string;
-  dataProcessed?: string;
-  
-  // Tenant Admin Stats
-  tenantUptime?: string;
-  
-  // User Stats
-  myProjects?: number;
-  notifications?: number;
-  tasksCompleted?: number;
-  tasksPending?: number;
-}
-
-export interface NavigationItem {
-  id: string;
-  label: string;
-  icon: string;
-  path: string;
-}
-
-// interface UserPermissions {
-//   canViewDashboard: boolean;
-//   canViewProjects: boolean;
-//   canViewReports: boolean;
-//   canManagePlatform?: boolean;
-//   canManageTenants?: boolean;
-//   canManageAllUsers?: boolean;
-//   canViewSystemHealth?: boolean;
-//   canViewAnalytics?: boolean;
-//   canManageSystemSettings?: boolean;
-//   canManageTenant?: boolean;
-//   canManageTenantUsers?: boolean;
-//   canViewTenantAnalytics?: boolean;
-//   canManageTenantSettings?: boolean;
-//   canManageProfile?: boolean;
-//   canViewNotifications?: boolean;
-// }
+import AuditLogsView from './AuditLogsView';
+import SignInLogsView from './SignInLogsView';
+import TenantsView from './TenantsView';
+import {
+  UserProfile,
+  SearchResult
+} from '@/types/dashboard';
 
 const iconMap = {
   Home,
@@ -114,67 +69,7 @@ const iconMap = {
   Wifi,
 };
 
-export interface UserProfile {
-  id: string;
-  name: string;
-  email: string;
-  role: string;
-
-  firstName?: string;
-  lastName?: string;
-  tenantName?: string;
-}
-
-export interface Project {
-  id: string;
-  name: string;
-  description?: string;
-}
-
-export interface ActivityItem {
-  id: string;
-  action?: string;
-  eventType?: string;
-
-  user?: ActivityUser;
-  createdAt?: string;
-}
-
-export interface SystemHealth {
-  status?: string;
-  uptime?: string;
-  responseTime?: string;
-  storageUsage?: string;
-  memoryUsage?: string;
-}
-
-export interface Notification {
-  id: number;
-  message: string;
-  type?: string;
-  icon?: string;
-  timestamp?: Date;
-  read?: boolean;
-}
-
 import { useDashboardState } from '@/hooks/useDashboardState';
-
-// ============================================================================
-// TYPE DEFINITIONS (MOVED FROM INLINE)
-// ============================================================================
-// WHY: These types were previously defined inline in the component.
-// Now they're imported from the hook, but we still need SearchResult here.
-// TODO: Move all types to a shared types file for better organization.
-// ============================================================================
-
-type SearchResult =
-  | ({ type: 'navigation' } & NavigationItem)
-  | ({ type: 'project' } & Project)
-  | ({ type: 'activity' } & ActivityItem);
-
-// ============================================================================
-// UNIFIED DASHBOARD COMPONENT - STATE MANAGEMENT REFACTOR
-// ============================================================================
 // PREVIOUS STATE MANAGEMENT: 20+ individual useState hooks
 // - Difficult to track state changes
 // - Prone to bugs with interconnected state
@@ -226,23 +121,11 @@ export default React.memo(function UnifiedDashboard() {
     showUserMenu,
     userMenuTimeout,
 
-    // Computed values
-    unreadNotificationsCount,
-    hasActiveSearch,
-    isDataLoaded,
-
     // Actions
-    setUserProfile,
     setUserRole,
-    setStats,
-    setNavigation,
     setPermissions,
-    setActivity,
-    setProjects,
-    setSystemHealth,
     setDashboardData,
     setLoading,
-    setError,
     setLoadingState,
     setSidebarOpen,
     setCurrentView,
@@ -251,8 +134,6 @@ export default React.memo(function UnifiedDashboard() {
     setSearchQuery,
     setSearchResults,
     setShowSearchResults,
-    clearSearch,
-    setNotifications,
     addNotification,
     markNotificationRead,
     clearNotifications,
@@ -275,6 +156,7 @@ export default React.memo(function UnifiedDashboard() {
     return () => {
       clearInterval(notificationInterval);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Close search results, notifications, and user menu when clicking outside
@@ -300,7 +182,7 @@ export default React.memo(function UnifiedDashboard() {
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, []);
+  }, [setShowNotifications, setShowSearchResults, setShowUserMenu, setUserMenuTimeout, userMenuTimeout]);
 
   // Cleanup user menu timeout on unmount
   useEffect(() => {
@@ -353,13 +235,13 @@ export default React.memo(function UnifiedDashboard() {
     } catch (error) {
       console.error('Search error:', error);
     }
-  }, [navigation, projects, activity]);
+  }, [navigation, projects, activity, setSearchResults, setShowSearchResults]);
 
   const handleSearchInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const query = e.target.value;
     setSearchQuery(query);
     handleSearch(query);
-  }, [handleSearch]);
+  }, [handleSearch, setSearchQuery]);
 
   const handleSearchResultClick = useCallback((result: SearchResult) => {
     if (result.type === 'navigation') {
@@ -369,7 +251,7 @@ export default React.memo(function UnifiedDashboard() {
     }
     setShowSearchResults(false);
     setSearchQuery('');
-  }, [router]);
+  }, [router, setShowSearchResults, setSearchQuery]);
 
   const handleNavigation = useCallback((path: string) => {
     // Handle different navigation paths
@@ -383,6 +265,12 @@ export default React.memo(function UnifiedDashboard() {
       case '/tenants':
         setCurrentView('tenants');
         break;
+      case '/audit-logs':
+        setCurrentView('audit-logs');
+        break;
+      case '/sign-in-logs':
+        setCurrentView('sign-in-logs');
+        break;
       case '/system':
         setCurrentView('system');
         break;
@@ -394,7 +282,7 @@ export default React.memo(function UnifiedDashboard() {
         router.push(path);
         break;
     }
-  }, [router]);
+  }, [setCurrentView, router]);
 
   // ============================================================================
   // REFRESH DASHBOARD DATA FUNCTION - UPDATED FOR NEW STATE MANAGEMENT
@@ -415,6 +303,7 @@ export default React.memo(function UnifiedDashboard() {
     } finally {
       setRefreshing(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isRefreshing, setRefreshing, setLastUpdated]);  // Logout function
   // ============================================================================
   // LOGOUT FUNCTION - UPDATED FOR NEW STATE MANAGEMENT
@@ -601,7 +490,7 @@ export default React.memo(function UnifiedDashboard() {
     } finally {
       setLoading(false);
     }
-  }, [router, setLoadingState, setUserRole, setDashboardData, setPermissions, setLoading]);
+  }, [setLoadingState, setUserRole, setDashboardData, setPermissions, setLoading]);
 
   // const getRoleDisplayName = (role: string) => {
   //   switch (role) {
@@ -765,13 +654,20 @@ export default React.memo(function UnifiedDashboard() {
   console.log('UnifiedDashboard render - sidebarOpen:', sidebarOpen);
 
   return (
-    <div className="min-h-screen bg-gray-50" style={{ minHeight: '100vh' }}>
+    <div
+      className="min-h-screen bg-gray-50"
+      style={{ minHeight: '100vh' }}
+      role="application"
+      aria-label="Enterprise Dashboard"
+    >
       {/* Header - Full Width */}
-      <div 
+      <header
         className="text-white shadow-lg w-full"
         style={{
           background: 'linear-gradient(135deg, #073c82 0%, #00d6bc 100%)',
         }}
+        role="banner"
+        aria-label="Dashboard header"
       >
         <div className="w-full px-4 sm:px-6 lg:px-8">
           {/* Top Row - Logo, Breadcrumb, and User Actions */}
@@ -780,10 +676,19 @@ export default React.memo(function UnifiedDashboard() {
               {/* Hamburger Menu Button */}
               <button
                 onClick={() => setSidebarOpen(!sidebarOpen)}
-                className="text-white/90 hover:text-white hover:bg-white/10 p-2 rounded transition-all duration-200"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    setSidebarOpen(!sidebarOpen);
+                  }
+                }}
+                className="text-white/90 hover:text-white hover:bg-white/10 p-2 rounded transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-white/50 focus:ring-offset-2 focus:ring-offset-[#073c82]"
+                aria-expanded={sidebarOpen}
+                aria-controls="main-sidebar"
+                aria-label={sidebarOpen ? "Hide navigation menu" : "Show navigation menu"}
                 title={sidebarOpen ? "Hide sidebar" : "Show sidebar"}
               >
-                <Menu className="w-5 h-5" />
+                <Menu className="w-5 h-5" aria-hidden="true" />
               </button>
               
               <Logo 
@@ -1096,19 +1001,28 @@ export default React.memo(function UnifiedDashboard() {
             </div>
           </div>
         </div>
-      </div>
+      </header>
 
       {/* Main Content */}
-      <div 
+      <main
+        id="main-content"
         className={`px-4 sm:px-6 lg:px-8 py-8 transition-all duration-300 ${sidebarOpen ? 'ml-64' : 'ml-0'}`}
         style={{
           marginLeft: sidebarOpen ? '16rem' : '0',
           transition: 'margin-left 0.3s ease-in-out'
         }}
+        role="main"
+        aria-label="Main content"
       >
         {/* Conditional Content Rendering */}
         {currentView === 'users' ? (
           <UsersView />
+        ) : currentView === 'tenants' ? (
+          <TenantsView />
+        ) : currentView === 'audit-logs' ? (
+          <AuditLogsView />
+        ) : currentView === 'sign-in-logs' ? (
+          <SignInLogsView />
         ) : currentView === 'dashboard' ? (
           <>
             {/* 4-Column Grid - Key Metrics */}
@@ -1477,12 +1391,13 @@ export default React.memo(function UnifiedDashboard() {
             )}
           </div>
         </div>
-          </>
-        ) : null}
-      </div>
+        </>
+      ) : null}
+      </main>
 
       {/* Main Sidebar */}
-      <div 
+      <aside
+        id="main-sidebar"
         className="absolute left-0 w-64 z-50 transition-all duration-300 rounded-r-xl flex flex-col"
         style={{ 
           top: '80px', // Directly below header
@@ -1492,6 +1407,9 @@ export default React.memo(function UnifiedDashboard() {
           backgroundColor: 'white',
           boxShadow: '2px 0 4px rgba(0,0,0,0.1)'
         }}
+        role="complementary"
+        aria-label="Main navigation sidebar"
+        aria-hidden={!sidebarOpen}
       >
         <div className="flex-1">
           <Sidebar onNavigation={handleNavigation} />
@@ -1517,7 +1435,7 @@ export default React.memo(function UnifiedDashboard() {
           </div>
         </div>
 
-      </div>
+      </aside>
 
       {/* Secondary Sidebar - Below main sidebar for next page */}
       <div

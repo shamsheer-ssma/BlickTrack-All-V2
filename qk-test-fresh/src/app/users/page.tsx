@@ -5,13 +5,11 @@ import { useRouter } from 'next/navigation';
 import { 
   Users, 
   Search, 
-  Filter, 
   MoreVertical, 
   Mail, 
   Shield, 
   CheckCircle, 
   XCircle, 
-  Clock,
   Building,
   ArrowLeft,
   RefreshCw
@@ -28,7 +26,7 @@ interface UsersData {
 
 export default function UsersPage() {
   const router = useRouter();
-  const { isPlatformAdmin, isTenantAdmin } = usePermissions();
+  const { isPlatformAdmin } = usePermissions();
   const [usersData, setUsersData] = useState<UsersData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

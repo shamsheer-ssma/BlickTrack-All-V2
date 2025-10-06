@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Users, 
-  Search, 
   CheckCircle, 
   XCircle, 
   Building,
@@ -11,9 +10,6 @@ import {
   Shield,
   Edit,
   Trash2,
-  MoreVertical,
-  User as UserIcon,
-  Settings,
   Key,
   Lock,
   Unlock,
@@ -30,12 +26,10 @@ interface UsersData {
 }
 
 export default function UsersView() {
-  const { isPlatformAdmin, isTenantAdmin } = usePermissions();
+  const { isPlatformAdmin } = usePermissions();
   const [usersData, setUsersData] = useState<UsersData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterRole, setFilterRole] = useState('all');
   const [columnFilters, setColumnFilters] = useState({
     user: '',
     role: '',
@@ -47,7 +41,6 @@ export default function UsersView() {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [showRightPanel, setShowRightPanel] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [showEditModal, setShowEditModal] = useState(false);
   const [rightPanelMode, setRightPanelMode] = useState<'view' | 'edit'>('view');
   const [editFormData, setEditFormData] = useState({
     firstName: '',

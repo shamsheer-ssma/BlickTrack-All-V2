@@ -104,6 +104,7 @@ export function usePermissions() {
     };
 
     loadUserData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadTenantFeatures = useCallback(async () => {

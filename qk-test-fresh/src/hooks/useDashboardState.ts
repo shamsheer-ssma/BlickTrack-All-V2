@@ -1,4 +1,4 @@
-import React, { useReducer, useCallback } from 'react';
+import { useReducer, useCallback } from 'react';
 
 // ============================================================================
 // TYPE IMPORTS FROM UNIFIED DASHBOARD
@@ -101,7 +101,7 @@ interface DashboardUIState {
   loading: boolean;
   error: string | null;
   sidebarOpen: boolean;
-  currentView: 'dashboard' | 'users' | 'tenants' | 'system' | 'analytics';
+  currentView: 'dashboard' | 'users' | 'tenants' | 'system' | 'analytics' | 'audit-logs' | 'sign-in-logs';
   lastUpdated: Date;
   isRefreshing: boolean;
 }
