@@ -37,7 +37,7 @@
  *   - Optimized for frontend consumption
  */
 
-import { Controller, Get, Query, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, Put, Delete, Query, UseGuards, Request, Param, Body } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { DashboardService } from './dashboard.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -149,5 +149,36 @@ export class DashboardController {
   async getUserProfile(@Request() req) {
     const user = req.user;
     return this.dashboardService.getUserProfile(user.id);
+  }
+
+  @Get('users')
+  @Roles(UserRole.SUPER_ADMIN, UserRole.PLATFORM_ADMIN, UserRole.TENANT_ADMIN)
+  @ApiOperation({ summary: 'Get users based on role - Platform Admin sees all users, Tenant Admin sees tenant users' })
+  @ApiResponse({ status: 200, description: 'Users retrieved successfully' })
+  async getUsers(@Request() req) {
+    const user = req.user;
+    return this.dashboardService.getRoleBasedUsers(user);
+  }
+
+  @Put('users/:userId')
+  @Roles(UserRole.SUPER_ADMIN, UserRole.PLATFORM_ADMIN, UserRole.TENANT_ADMIN)
+  @ApiOperation({ summary: 'Update user - Platform Admin can update all users, Tenant Admin only their tenant users' })
+  @ApiResponse({ status: 200, description: 'User updated successfully' })
+  @ApiResponse({ status: 403, description: 'Insufficient permissions' })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  async updateUser(@Request() req, @Param('userId') userId: string, @Body() updateData: any) {
+    const user = req.user;
+    return this.dashboardService.updateUser(user, userId, updateData);
+  }
+
+  @Delete('users/:userId')
+  @Roles(UserRole.SUPER_ADMIN, UserRole.PLATFORM_ADMIN, UserRole.TENANT_ADMIN)
+  @ApiOperation({ summary: 'Delete user - Platform Admin can delete all users, Tenant Admin only their tenant users' })
+  @ApiResponse({ status: 200, description: 'User deleted successfully' })
+  @ApiResponse({ status: 403, description: 'Insufficient permissions' })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  async deleteUser(@Request() req, @Param('userId') userId: string) {
+    const user = req.user;
+    return this.dashboardService.deleteUser(user, userId);
   }
 }

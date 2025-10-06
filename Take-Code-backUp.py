@@ -7,8 +7,9 @@ import json
 
 # ====================== CONFIG ======================
 SOURCE_DIRS = [
-    r"C:\GIT\BlickTrack\backend",
-    r"C:\GIT\BlickTrack\qk-test"
+    r"C:\GIT\BlickTrack\backend-fresh",
+    r"C:\GIT\BlickTrack\docs",
+    r"C:\GIT\BlickTrack\qk-test-fresh"
 ]
 
 OUTPUT_BASE_DIR = r"C:\code-backup\GIT-BT-Oct10"

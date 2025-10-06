@@ -364,7 +364,7 @@ export class DashboardService {
       case UserRole.PLATFORM_ADMIN:
         return [
           ...baseNavigation,
-          { id: 'platform-admin', label: 'Platform Admin', icon: 'Settings', path: '/platform-admin' },
+          { id: 'platform-admin', label: 'Platform Features', icon: 'Settings', path: '/platform-admin' },
           { id: 'tenants', label: 'Tenants', icon: 'Building', path: '/tenants' },
           { id: 'users', label: 'All Users', icon: 'Users', path: '/users' },
           { id: 'system', label: 'System', icon: 'Monitor', path: '/system' },
@@ -374,7 +374,7 @@ export class DashboardService {
         return [
           ...baseNavigation,
           { id: 'tenant-admin', label: 'Tenant Admin', icon: 'Settings', path: '/tenant-admin' },
-          { id: 'users', label: 'Users', icon: 'Users', path: '/tenant-users' },
+          { id: 'users', label: 'Users', icon: 'Users', path: '/users' },
           { id: 'settings', label: 'Settings', icon: 'Cog', path: '/settings' },
           { id: 'analytics', label: 'Analytics', icon: 'BarChart', path: '/tenant-analytics' },
         ];
@@ -406,68 +406,61 @@ export class DashboardService {
     const userRole = user.role as UserRole;
     const tenantId = user.tenantId;
 
-    // Define permissions based on user role
-    const permissions: any = {};
-
-    switch (userRole) {
-      case UserRole.SUPER_ADMIN:
-      case UserRole.PLATFORM_ADMIN:
-        permissions.canViewDashboard = true;
-        permissions.canViewProjects = true;
-        permissions.canViewReports = true;
-        permissions.canManagePlatform = true;
-        permissions.canManageTenants = true;
-        permissions.canManageAllUsers = true;
-        permissions.canViewSystemHealth = true;
-        permissions.canViewAnalytics = true;
-        permissions.canManageSystemSettings = true;
-        permissions.canManageTenant = true;
-        permissions.canManageTenantUsers = true;
-        permissions.canViewTenantAnalytics = true;
-        permissions.canManageTenantSettings = true;
-        permissions.canManageProfile = true;
-        permissions.canViewNotifications = true;
-        break;
-
-      case UserRole.TENANT_ADMIN:
-        permissions.canViewDashboard = true;
-        permissions.canViewProjects = true;
-        permissions.canViewReports = true;
-        permissions.canManagePlatform = false;
-        permissions.canManageTenants = false;
-        permissions.canManageAllUsers = false;
-        permissions.canViewSystemHealth = false;
-        permissions.canViewAnalytics = true;
-        permissions.canManageSystemSettings = false;
-        permissions.canManageTenant = true;
-        permissions.canManageTenantUsers = true;
-        permissions.canViewTenantAnalytics = true;
-        permissions.canManageTenantSettings = true;
-        permissions.canManageProfile = true;
-        permissions.canViewNotifications = true;
-        break;
-
-      case UserRole.END_USER:
-      default:
-        permissions.canViewDashboard = true;
-        permissions.canViewProjects = true;
-        permissions.canViewReports = true;
-        permissions.canManagePlatform = false;
-        permissions.canManageTenants = false;
-        permissions.canManageAllUsers = false;
-        permissions.canViewSystemHealth = false;
-        permissions.canViewAnalytics = false;
-        permissions.canManageSystemSettings = false;
-        permissions.canManageTenant = false;
-        permissions.canManageTenantUsers = false;
-        permissions.canViewTenantAnalytics = false;
-        permissions.canManageTenantSettings = false;
-        permissions.canManageProfile = true;
-        permissions.canViewNotifications = true;
-        break;
-    }
+    // Get available features for this tenant
+    const tenantFeatures = await this.getTenantFeatures(tenantId);
+    
+    // Convert to UserPermission array format expected by frontend
+    const permissions = tenantFeatures.map((tenantFeature, index) => ({
+      id: `perm-${userId}-${tenantFeature.featureId}-${index}`,
+      userId: userId,
+      featureId: tenantFeature.featureId,
+      canView: this.getPermissionForRole(userRole, tenantFeature.feature.key, 'view'),
+      canEdit: this.getPermissionForRole(userRole, tenantFeature.feature.key, 'edit'),
+      canDelete: this.getPermissionForRole(userRole, tenantFeature.feature.key, 'delete'),
+      feature: {
+        id: tenantFeature.feature.id,
+        name: tenantFeature.feature.name,
+        key: tenantFeature.feature.key,
+        slug: tenantFeature.feature.key,
+        description: tenantFeature.feature.description || '',
+        defaultEnabled: tenantFeature.feature.defaultEnabled,
+        category: tenantFeature.feature.category || 'general'
+      }
+    }));
 
     return permissions;
+  }
+
+  /**
+   * Helper method to determine permission based on role and feature
+   */
+  private getPermissionForRole(userRole: UserRole, featureKey: string, action: 'view' | 'edit' | 'delete'): boolean {
+    // Super admin and platform admin can do everything
+    if (userRole === UserRole.SUPER_ADMIN || userRole === UserRole.PLATFORM_ADMIN) {
+      return true;
+    }
+
+    // Tenant admin can view and edit most features, but not delete system features
+    if (userRole === UserRole.TENANT_ADMIN) {
+      if (action === 'view') return true;
+      if (action === 'edit') return !featureKey.includes('system') && !featureKey.includes('platform');
+      if (action === 'delete') return false;
+    }
+
+    // End users have limited permissions
+    if (userRole === UserRole.END_USER) {
+      if (action === 'view') {
+        return !featureKey.includes('admin') && !featureKey.includes('system');
+      }
+      if (action === 'edit') {
+        return featureKey.includes('profile') || featureKey.includes('user');
+      }
+      if (action === 'delete') {
+        return false;
+      }
+    }
+
+    return false;
   }
 
   /**
@@ -860,6 +853,216 @@ export class DashboardService {
       uptime: '99.9%',
       responseTime: '85ms',
       lastSync: new Date().toISOString(),
+    };
+  }
+
+  /**
+   * Get role-based users
+   * Platform Admin: All users across all tenants
+   * Tenant Admin: Users from their tenant only
+   */
+  async getRoleBasedUsers(user: any) {
+    const userRole = user.role as UserRole;
+    const tenantId = user.tenantId;
+
+    switch (userRole) {
+      case UserRole.SUPER_ADMIN:
+      case UserRole.PLATFORM_ADMIN:
+        return this.getAllUsers();
+      case UserRole.TENANT_ADMIN:
+        return this.getTenantUsers(tenantId);
+      default:
+        throw new Error('Insufficient permissions to view users');
+    }
+  }
+
+  /**
+   * Get all users across all tenants (Platform Admin)
+   */
+  private async getAllUsers() {
+    const users = await this.prisma.user.findMany({
+      where: {
+        deletedAt: null,
+      },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        displayName: true,
+        name: true, // Keep for compatibility
+        role: true,
+        isVerified: true,
+        mfaEnabled: true,
+        lastLoginAt: true,
+        createdAt: true,
+        tenant: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    return {
+      users,
+      total: users.length,
+      role: 'PLATFORM_ADMIN',
+      description: 'All users across all tenants',
+    };
+  }
+
+  /**
+   * Get users from specific tenant (Tenant Admin)
+   */
+  private async getTenantUsers(tenantId: string) {
+    const users = await this.prisma.user.findMany({
+      where: {
+        tenantId,
+        deletedAt: null,
+      },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        displayName: true,
+        name: true, // Keep for compatibility
+        role: true,
+        isVerified: true,
+        mfaEnabled: true,
+        lastLoginAt: true,
+        createdAt: true,
+        tenant: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    return {
+      users,
+      total: users.length,
+      role: 'TENANT_ADMIN',
+      description: 'Users from your tenant',
+    };
+  }
+
+  /**
+   * Update user with proper permission checks
+   */
+  async updateUser(currentUser: any, userId: string, updateData: any) {
+    const currentUserRole = currentUser.role as UserRole;
+    const currentUserTenantId = currentUser.tenantId;
+
+    // Get the target user to check permissions
+    const targetUser = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: { tenant: true }
+    });
+
+    if (!targetUser) {
+      throw new Error('User not found');
+    }
+
+    // Permission checks
+    if (currentUserRole === UserRole.TENANT_ADMIN) {
+      // Tenant Admin can only update users from their own tenant
+      if (targetUser.tenantId !== currentUserTenantId) {
+        throw new Error('Insufficient permissions: You can only update users from your own tenant');
+      }
+    } else if (currentUserRole === UserRole.SUPER_ADMIN || currentUserRole === UserRole.PLATFORM_ADMIN) {
+      // Platform Admin and Super Admin can update any user
+      // No additional checks needed
+    } else {
+      throw new Error('Insufficient permissions');
+    }
+
+    // Update the user
+    const updatedUser = await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        firstName: updateData.firstName,
+        lastName: updateData.lastName,
+        displayName: updateData.displayName,
+        email: updateData.email,
+        role: updateData.role,
+        isVerified: updateData.isVerified,
+        mfaEnabled: updateData.mfaEnabled,
+        updatedAt: new Date()
+      },
+      include: {
+        tenant: {
+          select: {
+            id: true,
+            name: true,
+            slug: true
+          }
+        }
+      }
+    });
+
+    return {
+      success: true,
+      message: 'User updated successfully',
+      user: updatedUser
+    };
+  }
+
+  /**
+   * Delete user with proper permission checks
+   */
+  async deleteUser(currentUser: any, userId: string) {
+    const currentUserRole = currentUser.role as UserRole;
+    const currentUserTenantId = currentUser.tenantId;
+
+    // Get the target user to check permissions
+    const targetUser = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: { tenant: true }
+    });
+
+    if (!targetUser) {
+      throw new Error('User not found');
+    }
+
+    // Permission checks
+    if (currentUserRole === UserRole.TENANT_ADMIN) {
+      // Tenant Admin can only delete users from their own tenant
+      if (targetUser.tenantId !== currentUserTenantId) {
+        throw new Error('Insufficient permissions: You can only delete users from your own tenant');
+      }
+    } else if (currentUserRole === UserRole.SUPER_ADMIN || currentUserRole === UserRole.PLATFORM_ADMIN) {
+      // Platform Admin and Super Admin can delete any user
+      // No additional checks needed
+    } else {
+      throw new Error('Insufficient permissions');
+    }
+
+    // Prevent self-deletion
+    if (targetUser.id === currentUser.id) {
+      throw new Error('You cannot delete your own account');
+    }
+
+    // Delete the user
+    await this.prisma.user.delete({
+      where: { id: userId }
+    });
+
+    return {
+      success: true,
+      message: 'User deleted successfully'
     };
   }
 
