@@ -35,12 +35,19 @@ export interface Feature {
 
 export interface TenantFeature {
   id: string;
-  tenantId: string;
   featureId: string;
-  isEnabled: boolean;
-  purchasedAt: string;
-  expiresAt?: string;
-  feature: Feature;
+  featureName: string;
+  featureKey: string;
+  category: string;
+  enabled: boolean;
+  maxUsers: number | null;
+  currentUsers: number;
+  config: Record<string, unknown>;
+  subFeatures: Array<{
+    id: string;
+    name: string;
+    description: string;
+  }>;
 }
 
 export interface UserPermission {
@@ -73,11 +80,8 @@ export function usePermissions() {
           const parsedUser = JSON.parse(userData) as User;
           setUser(parsedUser);
 
-          // Load tenant features and user permissions
-          await Promise.all([
-            loadTenantFeatures(),
-            loadUserPermissions()
-          ]);
+          // Load user permissions (tenant features will be loaded after user is set)
+          await loadUserPermissions();
         } else {
           // If no user data, try to get from API
           const userProfile = await apiService.getProfile();
@@ -108,9 +112,14 @@ export function usePermissions() {
   }, []);
 
   const loadTenantFeatures = useCallback(async () => {
+    if (!user?.tenantId) {
+      console.warn('No tenant ID available for loading features');
+      return;
+    }
+    
     try {
-      const features = await apiService.getTenantFeatures();
-      setTenantFeatures(features);
+      const features = await apiService.getCurrentUserTenantFeatures();
+      setTenantFeatures(features.features || []);
     } catch (err) {
       if (err instanceof Error) {
         console.error('Error loading tenant features:', err);
@@ -119,7 +128,14 @@ export function usePermissions() {
         setError('Failed to load tenant features');
       }
     }
-  }, []);
+  }, [user?.tenantId]);
+
+  // Load tenant features when user changes
+  useEffect(() => {
+    if (user?.tenantId) {
+      loadTenantFeatures();
+    }
+  }, [user?.tenantId, loadTenantFeatures]);
 
   const loadUserPermissions = useCallback(async () => {
     try {
@@ -148,7 +164,7 @@ export function usePermissions() {
     
     // Check if tenant has this feature
     const tenantHasFeature = tenantFeatures.some(
-      tf => tf.feature.slug === featureSlug && tf.isEnabled
+      tf => tf.featureKey === featureSlug && tf.enabled
     );
     
     if (!tenantHasFeature) return false;
@@ -173,7 +189,7 @@ export function usePermissions() {
     
     // Check if tenant has this feature
     const tenantHasFeature = tenantFeatures.some(
-      tf => tf.feature.slug === featureSlug && tf.isEnabled
+      tf => tf.featureKey === featureSlug && tf.enabled
     );
     
     if (!tenantHasFeature) return false;
@@ -198,7 +214,7 @@ export function usePermissions() {
     
     // Check if tenant has this feature
     const tenantHasFeature = tenantFeatures.some(
-      tf => tf.feature.slug === featureSlug && tf.isEnabled
+      tf => tf.featureKey === featureSlug && tf.enabled
     );
     
     if (!tenantHasFeature) return false;
@@ -220,18 +236,36 @@ export function usePermissions() {
     
     if (user.role === 'PLATFORM_ADMIN') {
       // Platform admin can see all features
-      return tenantFeatures.map(tf => tf.feature);
+      return tenantFeatures.map(tf => ({
+        id: tf.featureId,
+        name: tf.featureName,
+        slug: tf.featureKey,
+        description: '',
+        isActive: tf.enabled
+      }));
     }
     
     if (user.role === 'TENANT_ADMIN') {
       // Tenant admin can see all tenant features
-      return tenantFeatures.map(tf => tf.feature);
+      return tenantFeatures.map(tf => ({
+        id: tf.featureId,
+        name: tf.featureName,
+        slug: tf.featureKey,
+        description: '',
+        isActive: tf.enabled
+      }));
     }
     
     // For regular users, filter by permissions
     return tenantFeatures
-      .filter(tf => userPermissions[tf.feature.slug]?.canView)
-      .map(tf => tf.feature);
+      .filter(tf => userPermissions[tf.featureKey]?.canView)
+      .map(tf => ({
+        id: tf.featureId,
+        name: tf.featureName,
+        slug: tf.featureKey,
+        description: '',
+        isActive: tf.enabled
+      }));
   }, [user, tenantFeatures, userPermissions]);
 
   const refreshPermissions = useCallback(async () => {

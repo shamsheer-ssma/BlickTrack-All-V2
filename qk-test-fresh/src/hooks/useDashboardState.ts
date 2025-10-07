@@ -101,7 +101,7 @@ interface DashboardUIState {
   loading: boolean;
   error: string | null;
   sidebarOpen: boolean;
-  currentView: 'dashboard' | 'users' | 'tenants' | 'system' | 'analytics' | 'audit-logs' | 'sign-in-logs';
+  currentView: 'dashboard' | 'users' | 'tenants' | 'platform-features' | 'system' | 'analytics' | 'audit-logs' | 'sign-in-logs';
   lastUpdated: Date;
   isRefreshing: boolean;
 }

@@ -40,6 +40,7 @@ import UsersView from './UsersView';
 import AuditLogsView from './AuditLogsView';
 import SignInLogsView from './SignInLogsView';
 import TenantsView from './TenantsView';
+import PlatformFeaturesView from './PlatformFeaturesView';
 import {
   UserProfile,
   SearchResult
@@ -259,11 +260,14 @@ export default React.memo(function UnifiedDashboard() {
       case '/dashboard':
         setCurrentView('dashboard');
         break;
-      case '/users':
-        setCurrentView('users');
+      case '/platform-features':
+        setCurrentView('platform-features');
         break;
       case '/tenants':
         setCurrentView('tenants');
+        break;
+      case '/users':
+        setCurrentView('users');
         break;
       case '/audit-logs':
         setCurrentView('audit-logs');
@@ -1016,13 +1020,17 @@ export default React.memo(function UnifiedDashboard() {
       >
         {/* Conditional Content Rendering with Smooth Transitions */}
         <div className="transition-all duration-300 ease-in-out">
-          {currentView === 'users' ? (
+          {currentView === 'platform-features' ? (
             <div className="animate-fadeIn">
-              <UsersView />
+              <PlatformFeaturesView />
             </div>
           ) : currentView === 'tenants' ? (
             <div className="animate-fadeIn">
               <TenantsView />
+            </div>
+          ) : currentView === 'users' ? (
+            <div className="animate-fadeIn">
+              <UsersView />
             </div>
           ) : currentView === 'audit-logs' ? (
             <div className="animate-fadeIn">

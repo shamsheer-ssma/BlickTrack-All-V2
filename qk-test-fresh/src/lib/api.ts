@@ -22,7 +22,7 @@ import type {
   Feature,
   FeatureCategory
 } from '@/types/dashboard';
-import type { UserPermission, TenantFeature } from '@/hooks/usePermissions';
+import type { UserPermission } from '@/hooks/usePermissions';
 
 // Use the API_BASE_URL directly since we now have a default value
 const API_BASE_URL_ASSERTED = API_BASE_URL;
@@ -173,7 +173,7 @@ class ApiService {
   }
 
   /**
-   * Make HTTP request with error handling
+   * Make HTTP request with error handling and token refresh
    */
   async request<T>(
     endpoint: string,
@@ -201,6 +201,35 @@ class ApiService {
 
     try {
       const response = await fetch(url, config);
+      
+      // Handle token expiration (401 Unauthorized)
+      if (response.status === 401 && token) {
+        // Try to refresh token
+        const refreshed = await this.refreshToken();
+        if (refreshed) {
+          // Retry the request with new token
+          const newToken = this.getToken();
+          if (newToken) {
+            config.headers = {
+              ...config.headers,
+              'Authorization': `Bearer ${newToken}`,
+            };
+            const retryResponse = await fetch(url, config);
+            if (!retryResponse.ok) {
+              const errorData: ApiError = await retryResponse.json();
+              throw new Error(errorData.message || `HTTP ${retryResponse.status}: ${retryResponse.statusText}`);
+            }
+            return await retryResponse.json();
+          }
+        }
+        
+        // If refresh failed, clear auth and redirect to login
+        this.removeToken();
+        if (typeof window !== 'undefined') {
+          window.location.href = '/login';
+        }
+        throw new Error('Session expired. Please log in again.');
+      }
       
       if (!response.ok) {
         const errorData: ApiError = await response.json();
@@ -250,6 +279,38 @@ class ApiService {
     localStorage.removeItem('pendingPasswordResetOtp');
     
     // Note: We keep 'theme' preference as it's not session-related
+  }
+
+  /**
+   * Refresh access token using refresh token
+   */
+  private async refreshToken(): Promise<boolean> {
+    if (typeof window === 'undefined') return false;
+    
+    const refreshToken = localStorage.getItem('refresh_token');
+    if (!refreshToken) return false;
+
+    try {
+      const response = await fetch(`${this.baseUrl}/auth/refresh`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ refresh_token: refreshToken }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.access_token) {
+          this.setToken(data.access_token);
+          return true;
+        }
+      }
+    } catch (error) {
+      console.warn('Token refresh failed:', error);
+    }
+
+    return false;
   }
 
   /**
@@ -362,36 +423,6 @@ class ApiService {
     });
   }
 
-  /**
-   * Check if user is authenticated
-   */
-  isAuthenticated(): boolean {
-    const token = this.getToken();
-    if (!token) return false;
-
-    try {
-      // Check if token is expired
-      const payload = JSON.parse(atob(token.split('.')[1]));
-      const now = Math.floor(Date.now() / 1000);
-      return payload.exp > now;
-    } catch {
-      return false;
-    }
-  }
-
-  /**
-   * Get current user from localStorage
-   */
-  getCurrentUser(): User | null {
-    if (typeof window === 'undefined') return null;
-    
-    try {
-      const userStr = localStorage.getItem('user');
-      return userStr ? JSON.parse(userStr) : null;
-    } catch {
-      return null;
-    }
-  }
 
   // ==================== ROLE-BASED DASHBOARD METHODS ====================
 
@@ -494,15 +525,6 @@ class ApiService {
    */
   async checkFeatureAccess(featureSlug: string): Promise<{ featureSlug: string; canAccess: boolean }> {
     return this.request(`/dashboard/features/${featureSlug}/access`, {
-      method: 'GET',
-    });
-  }
-
-  /**
-   * Get tenant features (what features this tenant has access to)
-   */
-  async getTenantFeatures(): Promise<TenantFeature[]> {
-    return this.request('/dashboard/tenant-features', {
       method: 'GET',
     });
   }
@@ -771,6 +793,64 @@ class ApiService {
   }
 
   /**
+   * Get tenant features with sub-features
+   */
+  async getTenantFeatures(tenantId: string): Promise<{
+    tenantId: string;
+    tenantName: string;
+    planName: string;
+    features: Array<{
+      id: string;
+      featureId: string;
+      featureName: string;
+      featureKey: string;
+      category: string;
+      enabled: boolean;
+      maxUsers: number | null;
+      currentUsers: number;
+      config: Record<string, unknown>;
+      subFeatures: Array<{
+        id: string;
+        name: string;
+        description: string;
+      }>;
+    }>;
+  }> {
+    return this.request(`/tenants/${tenantId}/features`, {
+      method: 'GET',
+    });
+  }
+
+  /**
+   * Get current user's tenant features
+   */
+  async getCurrentUserTenantFeatures(): Promise<{
+    tenantId: string;
+    tenantName: string;
+    planName: string;
+    features: Array<{
+      id: string;
+      featureId: string;
+      featureName: string;
+      featureKey: string;
+      category: string;
+      enabled: boolean;
+      maxUsers: number | null;
+      currentUsers: number;
+      config: Record<string, unknown>;
+      subFeatures: Array<{
+        id: string;
+        name: string;
+        description: string;
+      }>;
+    }>;
+  }> {
+    return this.request('/dashboard/tenant-features', {
+      method: 'GET',
+    });
+  }
+
+  /**
    * Create new tenant
    */
   async createTenant(data: {
@@ -827,6 +907,49 @@ class ApiService {
     return this.request(`/tenants/${tenantId}`, {
       method: 'DELETE',
     });
+  }
+
+  /**
+   * Get current user from stored data
+   */
+  getCurrentUser(): User | null {
+    if (typeof window === 'undefined') return null;
+    
+    const userData = localStorage.getItem('user');
+    if (!userData) return null;
+    
+    try {
+      return JSON.parse(userData) as User;
+    } catch (error) {
+      console.warn('Could not parse stored user data:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Check if user is currently authenticated
+   */
+  isAuthenticated(): boolean {
+    if (typeof window === 'undefined') return false;
+    
+    const token = this.getToken();
+    if (!token) return false;
+    
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      const currentTime = Math.floor(Date.now() / 1000);
+      
+      // Check if token is expired
+      if (payload.exp && payload.exp < currentTime) {
+        return false;
+      }
+      
+      // Check if token has required fields
+      return !!(payload.sub && payload.email && payload.role);
+    } catch (error) {
+      console.warn('Invalid token format:', error);
+      return false;
+    }
   }
 }
 

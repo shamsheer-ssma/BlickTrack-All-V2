@@ -1,10 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Eye, EyeOff, Mail, Lock } from 'lucide-react';
 import Logo from '../ui/Logo';
 import { apiService, LoginRequest } from '@/lib/api';
+import { isAuthenticated } from '@/lib/auth';
 
 export default function FastLoginPage() {
   const [formData, setFormData] = useState({
@@ -15,7 +16,22 @@ export default function FastLoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<{email?: string; password?: string}>({});
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const router = useRouter();
+
+  // Check if user is already authenticated
+  useEffect(() => {
+    const checkExistingAuth = () => {
+      if (isAuthenticated()) {
+        // User is already logged in, redirect to dashboard
+        router.push('/dashboard');
+      } else {
+        setIsCheckingAuth(false);
+      }
+    };
+
+    checkExistingAuth();
+  }, [router]);
 
   const validateForm = () => {
     const newErrors: {email?: string; password?: string} = {};
@@ -89,6 +105,18 @@ export default function FastLoginPage() {
   const handleLogoClick = () => {
     router.push('/');
   };
+
+  // Show loading while checking authentication
+  if (isCheckingAuth) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-700">Checking authentication...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
