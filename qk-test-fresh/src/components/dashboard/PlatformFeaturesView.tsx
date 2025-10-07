@@ -18,10 +18,6 @@ import {
   Activity,
   BarChart3,
   Building2,
-  Sparkles,
-  TrendingUp,
-  Clock,
-  Star,
   Plus,
   Edit,
   Trash2,
@@ -39,7 +35,13 @@ export default function PlatformFeaturesView() {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedFeature, setSelectedFeature] = useState<Feature | null>(null);
   const [showRightPanel, setShowRightPanel] = useState(false);
-  const [tenantsWithAccess, setTenantsWithAccess] = useState<any[]>([]);
+  const [tenantsWithAccess, setTenantsWithAccess] = useState<Array<{
+    id: string;
+    name: string;
+    plan: string;
+    users: number;
+    status: string;
+  }>>([]);
 
   const loadFeatureCategories = useCallback(async () => {
     try {
@@ -56,7 +58,7 @@ export default function PlatformFeaturesView() {
     }
   }, []);
 
-  const loadTenantsWithAccess = useCallback(async (featureId: string) => {
+  const loadTenantsWithAccess = useCallback(async () => {
     try {
       // This would be a real API call to get tenants with access to this feature
       // For now, using dummy data
@@ -145,7 +147,7 @@ export default function PlatformFeaturesView() {
   const handleFeatureClick = (feature: Feature) => {
     setSelectedFeature(feature);
     setShowRightPanel(true);
-    loadTenantsWithAccess(feature.id);
+    loadTenantsWithAccess();
   };
 
   const handleCloseRightPanel = () => {
@@ -461,7 +463,7 @@ export default function PlatformFeaturesView() {
                   <div className="text-center py-4">
                     <Zap className="w-8 h-8 text-gray-300 mx-auto mb-2" />
                     <p className="text-sm text-gray-500">No sub-features defined</p>
-                    <p className="text-xs text-gray-400">Click "Add" to create one</p>
+                    <p className="text-xs text-gray-400">Click &quot;Add&quot; to create one</p>
                   </div>
                 )}
               </div>
